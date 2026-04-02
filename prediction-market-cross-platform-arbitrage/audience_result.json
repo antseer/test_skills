@@ -1,0 +1,103 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "output": {
+    "personas": [
+      {
+        "type": "defi_arbitrage_trader",
+        "description": "活跃的 DeFi 交易者，熟悉 AMM 和 Bonding Curve 机制，日常在多个预测市场平台之间寻找定价差异和套利窗口。资金量在 1,000-50,000 USD，习惯手动计算但缺乏系统性稀释建模工具。",
+        "experience_level": "advanced",
+        "primary_goal": "在 Polymarket/42、Opinion 等预测市场平台间发现并验证跨平台套利机会，量化 Bonding Curve 稀释对实际收益的影响",
+        "pain_points": [
+          "入场时的名义赔率与最终结算赔率严重偏离，无法提前量化稀释幅度",
+          "手动在多个平台间比价耗时，容易遗漏关键变量（TVL 变化、份额占比）",
+          "缺乏多情景 P&L 模拟工具，只能做静态套利计算",
+          "中途退出的滑点成本难以估算，导致实际亏损超预期"
+        ]
+      },
+      {
+        "type": "prediction_market_researcher",
+        "description": "对预测市场机制有深入研究兴趣的量化分析师或 crypto 研究员，关注 Conditional Token Framework (CTF)、AMM 定价模型和博弈论应用。可能在基金、研究机构或独立研究，需要结构化分析框架来验证套利假说。",
+        "experience_level": "intermediate_to_advanced",
+        "primary_goal": "系统性理解 Bonding Curve 机制下跨平台套利的失效条件，产出可复用的分析框架和研究报告",
+        "pain_points": [
+          "预测市场数据分散在多个平台和链上合约中，缺乏统一的分析入口",
+          "Bonding Curve 参数获取需要链上合约交互，门槛较高",
+          "现有工具（Dune、Nansen）不针对预测市场套利场景设计",
+          "难以快速验证推文中提到的套利策略是否真正可行"
+        ]
+      },
+      {
+        "type": "crypto_retail_speculator",
+        "description": "中等经验的加密货币投机者，在社交媒体上看到预测市场套利讨论后想参与，但对 Bonding Curve 稀释、条件代币等机制理解有限。资金量在 500-5,000 USD，决策主要受 KOL 观点和 FOMO 驱动。",
+        "experience_level": "beginner_to_intermediate",
+        "primary_goal": "快速判断某个跨平台预测市场套利机会是否值得参与，避免因不理解机制而亏损",
+        "pain_points": [
+          "不理解 Bonding Curve 稀释效应，误以为入场赔率就是最终赔率",
+          "缺乏风险评估能力，容易被高名义赔率吸引而忽略实际风险",
+          "看不懂链上数据和合约参数，依赖他人分析但无法验证",
+          "不知道何时应该止损退出"
+        ]
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "跨平台赔率差异发现后的套利可行性验证",
+        "trigger": "用户在 Polymarket/42 和 Opinion 上发现同一事件的定价差异超过 10%，需要系统性评估套利是否可行",
+        "frequency": "每周 1-3 次，取决于预测市场活跃事件数量"
+      },
+      {
+        "scenario": "Bonding Curve 池子 TVL 快速增长时的持仓再评估",
+        "trigger": "用户已持有某预测市场头寸，发现池子 TVL 在短时间内增长超过 2 倍，需要重新评估有效赔率和是否应该退出",
+        "frequency": "每月 2-5 次，集中在热门事件的早期阶段"
+      },
+      {
+        "scenario": "社交媒体套利策略的快速验证",
+        "trigger": "用户在 Twitter/X 上看到 KOL 分享的预测市场套利策略，需要用数据验证其可行性",
+        "frequency": "每周 1-2 次，受社交媒体热度驱动"
+      },
+      {
+        "scenario": "多情景 P&L 模拟用于仓位管理决策",
+        "trigger": "用户已建立跨平台对冲头寸，需要在不同市场演变路径下模拟组合盈亏，决定是否加仓、减仓或平仓",
+        "frequency": "每周 1 次（持仓期间的常规复盘）"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球约 30-50 万活跃预测市场参与者（Polymarket 月活约 10 万，加上 Opinion、Kalshi、Manifold 等平台用户），其中约 10-15 万用户同时使用两个及以上平台",
+      "serviceable": "约 1-3 万用户具备跨平台套利意识并主动寻找定价差异，其中约 3,000-5,000 人愿意使用量化分析工具辅助决策",
+      "confidence": "medium"
+    },
+    "competitive_landscape": [
+      {
+        "name": "Polymarket 内置分析面板",
+        "overlap": "部分重叠（提供单平台赔率和交易量数据）",
+        "differentiation": "本 Skill 专注跨平台比较和 Bonding Curve 稀释建模，Polymarket 面板仅展示本平台数据，不提供对冲分析"
+      },
+      {
+        "name": "Dune Analytics 预测市场看板",
+        "overlap": "部分重叠（提供链上数据查询和可视化）",
+        "differentiation": "Dune 是通用链上分析工具，需要用户自己写 SQL 查询；本 Skill 提供开箱即用的六步分析流程和风险评级，无需编写查询"
+      },
+      {
+        "name": "DeFiLlama 预测市场 TVL 追踪",
+        "overlap": "最小重叠（仅提供协议级 TVL 数据）",
+        "differentiation": "DeFiLlama 提供协议总 TVL 而非池级数据，不涉及套利分析、稀释建模或 P&L 模拟"
+      },
+      {
+        "name": "手动 Excel/Google Sheets 计算",
+        "overlap": "高度重叠（用户当前的主要替代方案）",
+        "differentiation": "本 Skill 将分散的分析步骤（静态套利、稀释建模、多情景模拟、退出分析）集成为结构化流程，减少人工计算错误，并提供标准化风险评级"
+      },
+      {
+        "name": "LunarCrush / Santiment 社交情绪工具",
+        "overlap": "最小重叠（提供市场情绪数据但不针对预测市场）",
+        "differentiation": "社交情绪工具关注话题热度和情绪指标，不涉及预测市场的定价机制分析和套利计算"
+      }
+    ]
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260402_154827_0e4959_prd.md",
+    "skill_path": "skills_workflow/_data/skills/generated/prediction-market-cross-platform-arbitrage/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260402_154827_0e4959_audience_result.json"
+  }
+}
