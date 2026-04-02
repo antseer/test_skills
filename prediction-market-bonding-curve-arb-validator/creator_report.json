@@ -1,0 +1,36 @@
+{
+  "skill_id": "prediction-market-bonding-curve-arb-validator",
+  "skill_name": "预测市场 Bonding Curve 套利验证器",
+  "source": "prd",
+  "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260402_tweet_001.md",
+  "job_id": "prd_20260402_tweet_001",
+  "created_at": "2026-04-02T00:00:00Z",
+  "strategy_intent": "Evaluate cross-platform prediction market arbitrage viability by simulating Bonding Curve share dilution effects. Addresses the misconception that displayed odds equal actual returns in Bonding Curve markets, where pool TVL growth erodes early participants' payout share.",
+  "opportunity_type": "prediction_market_arbitrage",
+  "files_generated": [
+    "SKILL.md",
+    "arb_validator.py",
+    "README.md",
+    "creator_report.json"
+  ],
+  "analysis_steps": [
+    "Static arbitrage PnL calculation",
+    "Bonding Curve pool share dilution simulation",
+    "Dynamic PnL recalculation with dilution",
+    "Early exit path analysis",
+    "Comprehensive verdict determination (VIABLE / CONDITIONAL / NOT_VIABLE)"
+  ],
+  "mcp_coverage": {
+    "fully_covered": ["ant_spot_market_structure (token spot price)"],
+    "partially_covered": ["ant_market_sentiment (market sentiment, social heat)"],
+    "not_covered": ["prediction market odds/probability", "pool TVL", "Bonding Curve parameters"]
+  },
+  "validation": {
+    "no_placeholders": true,
+    "has_error_handling": true,
+    "has_timeouts": false,
+    "uses_logging": true,
+    "no_paid_apis": true,
+    "output_format_json": true
+  }
+}

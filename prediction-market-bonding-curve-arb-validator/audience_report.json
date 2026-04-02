@@ -1,0 +1,96 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "output": {
+    "personas": [
+      {
+        "type": "prediction_market_arbitrageur",
+        "description": "活跃于 Polymarket、42、Azuro 等预测市场平台的套利交易者，已有跨平台下注经验，关注赔率差异带来的套利机会，但对 Bonding Curve 定价机制下的份额稀释效应缺乏量化工具",
+        "experience_level": "advanced",
+        "primary_goal": "在跨平台赔率差异中识别真实套利机会，避免被动态稀释效应吞噬利润",
+        "pain_points": [
+          "静态赔率分析无法反映 Bonding Curve 池的动态稀释",
+          "缺乏量化工具模拟不同 TVL 增长场景下的真实 PnL",
+          "手动计算份额占比和赔付变化费时且易出错",
+          "不同平台 Bonding Curve 公式各异，难以横向对比"
+        ]
+      },
+      {
+        "type": "defi_researcher",
+        "description": "DeFi 协议研究员或投研分析师，专注于预测市场赛道的机制分析，需要结构化工具辅助撰写研报或内部投研报告",
+        "experience_level": "intermediate",
+        "primary_goal": "理解并量化 Bonding Curve 机制对预测市场收益结构的影响，用于研报输出或策略评估",
+        "pain_points": [
+          "Bonding Curve 稀释效应的直觉理解容易，但精确量化困难",
+          "需要在多场景假设下快速生成对比表格",
+          "缺少标准化的分析框架来评估不同预测市场平台的收益结构"
+        ]
+      },
+      {
+        "type": "crypto_trader_casual",
+        "description": "关注预测市场但尚未深度参与的加密货币交易者，看到 KOL 讨论跨平台套利后想验证可行性再决定是否入场",
+        "experience_level": "intermediate",
+        "primary_goal": "在投入资金前快速验证套利策略是否真的有正期望值",
+        "pain_points": [
+          "对 Bonding Curve 机制理解有限，容易被表面赔率误导",
+          "无法自行搭建模拟模型",
+          "信息来源分散，需要一个整合性的分析工具"
+        ]
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "跨平台赔率差异验证",
+        "trigger": "用户发现 Polymarket 与 42 (或其他 Bonding Curve 平台) 对同一事件赔率存在显著差异（如 >10% 概率偏差），想评估套利是否可行",
+        "frequency": "每周 1-2 次（随预测市场事件热度波动）"
+      },
+      {
+        "scenario": "Bonding Curve 池入场决策",
+        "trigger": "用户准备在 Bonding Curve 预测市场平台下注前，想预估不同 TVL 增长情景下的实际收益和份额稀释程度",
+        "frequency": "每次入场前一次性使用"
+      },
+      {
+        "scenario": "持仓动态监控与退出决策",
+        "trigger": "已持仓用户观察到池子 TVL 快速增长（如超过 3x），需要重新评估持有到期 vs 提前沿曲线退出的收益对比",
+        "frequency": "持仓期间每周 1 次"
+      },
+      {
+        "scenario": "投研报告辅助分析",
+        "trigger": "DeFi 研究员在撰写预测市场赛道研报时，需要结构化的套利可行性分析框架和数据表格",
+        "frequency": "每月 1-2 次（随研报发布节奏）"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球约 20-30 万活跃预测市场用户（Polymarket 月活约 10 万 + 42/Azuro/Kalshi 等平台用户），其中关注跨平台套利的约 5-8 万人",
+      "serviceable": "约 5000-10000 名同时活跃于多个预测市场平台、具备 Bonding Curve 基础认知、愿意使用量化分析工具的交易者和研究员",
+      "confidence": "low"
+    },
+    "competitive_landscape": [
+      {
+        "name": "Polymarket 内置分析面板",
+        "overlap": "提供基础赔率和流动性数据展示",
+        "differentiation": "本 Skill 专注跨平台套利可行性分析，特别是 Bonding Curve 稀释效应的量化模拟，Polymarket 自身面板不涉及跨平台对冲场景"
+      },
+      {
+        "name": "DeFiLlama / Dune Analytics 自建看板",
+        "overlap": "可查询预测市场 TVL 和链上数据",
+        "differentiation": "本 Skill 将 TVL 数据转化为策略级信号（份额稀释 -> 实际 PnL -> 可行性判定），而非仅展示原始数据"
+      },
+      {
+        "name": "手动 Excel/Google Sheet 模型",
+        "overlap": "高级交易者自行搭建的套利计算表格",
+        "differentiation": "本 Skill 提供标准化的五步分析流程，包含多场景 TVL 增长模拟和提前退出路径分析，无需用户自行建模"
+      },
+      {
+        "name": "Chaos Labs / Gauntlet 风控模拟",
+        "overlap": "提供 DeFi 协议风险模拟框架",
+        "differentiation": "面向协议级风控而非个人交易者的套利决策，且不专注预测市场 Bonding Curve 场景"
+      }
+    ]
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260402_tweet_001.md",
+    "skill_path": "skills_workflow/_data/skills/generated/prediction-market-bonding-curve-arb-validator/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260402_tweet_001_audience_result.json"
+  }
+}
