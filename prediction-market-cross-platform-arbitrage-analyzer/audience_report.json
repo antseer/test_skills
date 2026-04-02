@@ -1,0 +1,167 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "output": {
+    "skill_id": "prediction-market-cross-platform-arbitrage-analyzer",
+    "personas": [
+      {
+        "type": "prediction_market_arbitrageur",
+        "label": "Cross-Platform Arb Trader",
+        "description": "Active prediction market participant who trades across multiple platforms (Polymarket, 42, Kalshi, etc.) seeking risk-adjusted returns from pricing discrepancies. Typically holds simultaneous positions on 2+ platforms to hedge or arbitrage the same event.",
+        "experience_level": "advanced",
+        "background": "Has 1-3 years of experience in prediction markets or DeFi trading. Familiar with AMM mechanics, Bonding Curves, and basic arbitrage logic. May have a quantitative or finance background. Comfortable reading smart contracts or platform documentation to understand pricing mechanisms.",
+        "primary_goal": "Identify and execute cross-platform arbitrage opportunities while accurately accounting for dynamic risks such as Bonding Curve dilution, slippage, and settlement rule differences.",
+        "pain_points": [
+          "Static arbitrage calculators do not account for Bonding Curve share dilution over time",
+          "Manual computation of diluted odds across multiple pool-size scenarios is tedious and error-prone",
+          "Difficulty quantifying how pool TVL growth erodes actual payout ratios",
+          "No existing tool combines cross-platform odds comparison with dynamic Bonding Curve simulation",
+          "Settlement rule differences between platforms are hard to systematically compare"
+        ],
+        "willingness_to_pay": "High. Capital deployed in prediction market arbitrage typically ranges from $1K-$50K per position. A tool that prevents a single miscalculated trade saves more than any reasonable subscription fee. Would pay $20-50/month or $0.50-1.00 per analysis."
+      },
+      {
+        "type": "defi_researcher",
+        "label": "DeFi / Prediction Market Analyst",
+        "description": "Crypto research analyst or content creator who studies prediction market mechanisms, writes reports on arbitrage inefficiencies, and publishes analysis for a following or for an investment fund. Focuses on understanding market microstructure rather than active execution.",
+        "experience_level": "intermediate_to_advanced",
+        "background": "Works at a crypto research firm, hedge fund, or independently produces analysis content (Substack, X threads, Dune dashboards). Understands Bonding Curve mechanics conceptually but may not build simulation models from scratch. Reads the original Wuhuoqiu-style analysis threads and wants to reproduce or extend them systematically.",
+        "primary_goal": "Generate structured feasibility reports and scenario matrices for prediction market arbitrage strategies to publish or share with decision-makers.",
+        "pain_points": [
+          "Building Bonding Curve dilution models from scratch requires significant math and engineering effort",
+          "Difficult to produce consistent, repeatable scenario analysis across different events and platforms",
+          "Market sentiment data and prediction market pricing data are siloed across different tools",
+          "Lack of a standardized framework for evaluating cross-platform arbitrage viability"
+        ],
+        "willingness_to_pay": "Medium. Values the analytical framework and report output. Would pay $10-30/month as part of a research toolkit."
+      },
+      {
+        "type": "crypto_fund_risk_manager",
+        "label": "Institutional / Fund Risk Analyst",
+        "description": "Risk or portfolio analyst at a crypto-native fund or proprietary trading desk that allocates capital to prediction market strategies. Needs to evaluate proposed arbitrage trades before approving capital deployment.",
+        "experience_level": "advanced",
+        "background": "Quantitative finance background with crypto overlay. Manages risk across a portfolio that may include prediction market positions. Needs systematic, auditable analysis to justify or reject proposed trades. May manage $100K-$10M in prediction market exposure.",
+        "primary_goal": "Validate arbitrage proposals from traders by stress-testing them against Bonding Curve dilution scenarios, ensuring positions have positive expected value under realistic conditions.",
+        "pain_points": [
+          "Traders present opportunities using static odds without accounting for dilution dynamics",
+          "No standardized risk framework exists for prediction market cross-platform positions",
+          "Difficult to set appropriate stop-loss or TVL-monitoring thresholds without scenario simulation",
+          "Need auditable, reproducible analysis outputs for compliance and decision records"
+        ],
+        "willingness_to_pay": "High. A single avoided bad trade on a $10K-$100K position justifies significant tooling costs. Would pay $50-200/month at an institutional tier."
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "Pre-trade feasibility check for a newly discovered cross-platform odds gap",
+        "trigger": "User notices that Polymarket prices an event at 63% probability while the corresponding 'No' pool on 42 platform offers an apparent 1:18 payout ratio, suggesting a potential arbitrage.",
+        "workflow": "User inputs both platform parameters (TVL, odds, position cost, investment amount, Bonding Curve type) into the Skill. The Skill outputs a static spread analysis, dilution simulation table, 3x3 scenario matrix, and a feasibility rating. User decides whether to proceed based on whether the feasibility rating is 'feasible' or 'not_feasible'.",
+        "frequency": "2-5 times per month, as new events appear on prediction market platforms.",
+        "value_delivered": "Prevents capital deployment into positions that appear profitable under static analysis but are unprofitable once Bonding Curve dilution is modeled."
+      },
+      {
+        "scenario": "Ongoing position monitoring and re-evaluation as pool TVL changes",
+        "trigger": "User already holds a cross-platform arbitrage position and the Bonding Curve pool TVL has grown significantly since entry, raising concerns about dilution.",
+        "workflow": "User re-runs the analysis with updated pool_a_current_tvl to see how the scenario matrix has shifted. If the feasibility rating downgrades from 'conditionally_feasible' to 'not_feasible', user considers exiting the Bonding Curve position along the curve.",
+        "frequency": "Weekly to bi-weekly for active positions (1-3 times per month per position).",
+        "value_delivered": "Provides data-driven exit signals based on dilution thresholds rather than gut feeling."
+      },
+      {
+        "scenario": "Research report generation for prediction market mechanism analysis",
+        "trigger": "Analyst is writing a thread or report comparing arbitrage opportunities across prediction market platforms and needs structured scenario analysis.",
+        "workflow": "Analyst runs the Skill across multiple events/platform pairs, collects the scenario matrices and feasibility ratings, and synthesizes them into a comparative report or educational content.",
+        "frequency": "1-2 times per month for publishing analysts.",
+        "value_delivered": "Accelerates production of high-quality analysis content with reproducible, quantitative backing."
+      },
+      {
+        "scenario": "Risk committee review of proposed prediction market allocation",
+        "trigger": "A trader at a crypto fund proposes deploying capital into a cross-platform prediction market arbitrage position. The risk team needs to evaluate the proposal.",
+        "workflow": "Risk analyst runs the Skill with the trader's proposed parameters, reviews the dilution curves and scenario matrix, and presents the feasibility rating and breakeven pool size to the risk committee. Approval or rejection is based on whether the breakeven threshold is realistic.",
+        "frequency": "1-3 times per quarter for institutional users.",
+        "value_delivered": "Standardizes the risk evaluation process for a novel asset class, providing auditable analysis artifacts."
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable_market": {
+        "description": "All active prediction market participants globally across Polymarket, Kalshi, 42, Azuro, and other platforms. As of early 2026, Polymarket alone has reported 300K+ monthly active traders, with the broader prediction market ecosystem (including centralized platforms like Kalshi) estimated at 500K-1M active participants.",
+        "estimate": "500,000 - 1,000,000 active prediction market traders globally"
+      },
+      "serviceable_addressable_market": {
+        "description": "Prediction market traders who actively trade across multiple platforms and would benefit from cross-platform analysis tooling. This requires: (a) trading on 2+ platforms, (b) awareness of Bonding Curve mechanics, (c) willingness to use analytical tools. Estimated at 5-10% of TAM based on the niche nature of cross-platform arbitrage strategies.",
+        "estimate": "25,000 - 100,000 cross-platform prediction market traders"
+      },
+      "serviceable_obtainable_market": {
+        "description": "The realistic addressable segment within the first 12 months, considering the Skill is delivered via Claude Code (limiting reach to Claude users) and is primarily relevant to crypto-native, technically sophisticated traders. Estimated at 2-5% of SAM.",
+        "estimate": "500 - 5,000 active users in the first year"
+      },
+      "growth_trends": [
+        "Polymarket monthly trading volume grew from ~$50M to $2B+ between 2024-2025, indicating rapid market expansion",
+        "New prediction market platforms (42, Azuro, Hedgehog) launching with novel Bonding Curve and AMM mechanisms, increasing the need for cross-platform analysis",
+        "Institutional interest in prediction markets growing following the 2024 US election cycle, with crypto funds allocating to prediction market strategies",
+        "Regulatory clarity in some jurisdictions (e.g., CFTC approved Kalshi event contracts) expanding the addressable market"
+      ],
+      "confidence": "medium",
+      "confidence_rationale": "TAM estimates are based on publicly reported Polymarket user numbers and industry reports. SAM and SOM estimates are more speculative as cross-platform arbitrage is a niche strategy, and Bonding Curve-specific platforms (42) are relatively new with limited public data on user counts."
+    },
+    "competitive_landscape": [
+      {
+        "name": "Manual Spreadsheet Analysis",
+        "type": "diy_alternative",
+        "overlap": "Full overlap on basic static arbitrage calculation",
+        "differentiation": "This Skill automates the entire pipeline from static spread to Bonding Curve dilution simulation to scenario matrix generation, which would take hours to replicate in a spreadsheet. Also integrates market sentiment data via MCP."
+      },
+      {
+        "name": "Polymarket API / Dune Dashboards",
+        "type": "data_source",
+        "overlap": "Partial overlap on odds/probability data retrieval",
+        "differentiation": "These are raw data sources, not analytical tools. They show current pricing but do not model Bonding Curve dilution or construct scenario matrices. This Skill consumes their data and adds the analytical layer."
+      },
+      {
+        "name": "DeFi Arbitrage Bots (e.g., Hummingbot, custom MEV bots)",
+        "type": "adjacent_tool",
+        "overlap": "Low overlap -- these focus on DEX liquidity pool arbitrage, not prediction market cross-platform arbitrage",
+        "differentiation": "Existing arb bots target AMM price discrepancies on DEXs with immediate execution. This Skill addresses a fundamentally different use case: long-duration prediction market positions with Bonding Curve dilution dynamics that unfold over weeks or months."
+      },
+      {
+        "name": "LunarCrush / Santiment Alerts",
+        "type": "sentiment_tool",
+        "overlap": "Partial overlap on market sentiment tracking for related tokens/topics",
+        "differentiation": "Sentiment tools provide raw social metrics. This Skill integrates sentiment as one input into a prediction-market-specific analytical framework, using it to project pool TVL changes rather than as a standalone signal."
+      }
+    ],
+    "recommendations": [
+      {
+        "category": "primary_persona_optimization",
+        "suggestion": "Optimize for the Cross-Platform Arb Trader persona as the primary user. This means: (a) minimize required inputs by providing sensible defaults for Bonding Curve parameters, (b) make the feasibility rating and breakeven pool size the most prominent outputs, (c) add a one-line summary ('Proceed' / 'Do Not Proceed' / 'Monitor') for quick decision-making."
+      },
+      {
+        "category": "data_integration",
+        "suggestion": "The biggest friction point is manual data entry for platform pricing. Prioritize integrating Polymarket's public API for automatic odds retrieval. For 42 platform, provide clear instructions on where to find pool TVL and odds data. Reducing input friction will significantly improve adoption."
+      },
+      {
+        "category": "distribution_channel",
+        "suggestion": "Target Crypto Twitter (CT) and prediction market communities on Discord/Telegram as primary distribution channels. The original insight came from a CT thread by @Wuhuoqiu -- this community already understands the problem. Publish example analyses as X threads to demonstrate the Skill's value, referencing real prediction market events."
+      },
+      {
+        "category": "content_marketing",
+        "suggestion": "Create 2-3 case study analyses of real cross-platform arbitrage opportunities (past events on Polymarket vs 42) showing how static analysis would have led to losses while the Skill's dynamic analysis would have flagged the risks. This makes the value proposition concrete and shareable."
+      },
+      {
+        "category": "feature_expansion",
+        "suggestion": "Add a 'portfolio mode' that allows institutional users to evaluate multiple cross-platform positions simultaneously and aggregate risk across them. This addresses the Fund Risk Analyst persona and justifies a higher price tier."
+      },
+      {
+        "category": "monitoring_integration",
+        "suggestion": "Build a companion alerting feature: after initial analysis, users can set a TVL monitoring threshold (the breakeven_pool_size). When the Bonding Curve pool TVL approaches that threshold, trigger a re-analysis alert. This converts the Skill from a one-time tool into a continuous monitoring service."
+      }
+    ]
+  },
+  "metadata": {
+    "job_id": "prd_20260402_150226_47cc0e",
+    "prd_path": "data/prd/prd_20260402_150226_47cc0e_prd.md",
+    "skill_path": "skills_workflow/_data/skills/generated/prediction-market-cross-platform-arbitrage-analyzer/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260402_150226_47cc0e_audience_result.json",
+    "analyzed_at": "2026-04-02T15:05:00Z",
+    "agent": "audience-agent"
+  }
+}
