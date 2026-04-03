@@ -1,0 +1,47 @@
+{
+  "skill_id": "whale-control-analysis",
+  "skill_name": "whale-control-analysis",
+  "source": {
+    "type": "prd",
+    "prd_path": "data/prd/prd_20260403_080727_f4b76d_prd.md",
+    "job_id": "prd_20260403_080727_f4b76d",
+    "original_tweet": "https://x.com/EmberCN/status/2035893241107869888",
+    "methodology_author": "@EmberCN"
+  },
+  "generation": {
+    "strategy_intent": "Holder concentration clustering analysis to identify single-entity market control via on-chain data",
+    "opportunity_type": "on-chain-analytics",
+    "analysis_steps": 9,
+    "mcp_tools_used": [
+      "ant_meme",
+      "ant_token_analytics",
+      "ant_address_profile",
+      "ant_futures_market_structure"
+    ],
+    "input_parameters": [
+      "symbol",
+      "chain",
+      "token_address",
+      "top_n",
+      "time_window_days",
+      "known_addresses",
+      "control_threshold"
+    ]
+  },
+  "validation": {
+    "status": "passed",
+    "checks": {
+      "skill_md_exists": true,
+      "readme_md_exists": true,
+      "frontmatter_valid": true,
+      "name_kebab_case": true,
+      "description_no_angle_brackets": true,
+      "no_placeholder_residue": true
+    }
+  },
+  "files_generated": [
+    "skills_workflow/_data/skills/generated/whale-control-analysis/SKILL.md",
+    "skills_workflow/_data/skills/generated/whale-control-analysis/README.md",
+    "skills_workflow/_data/skills/generated/whale-control-analysis/creator_report.json"
+  ]
+}
