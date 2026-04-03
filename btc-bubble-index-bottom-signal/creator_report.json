@@ -1,0 +1,29 @@
+{
+  "skill_id": "btc-bubble-index-bottom-signal",
+  "skill_name": "比特币泡沫指数底部信号分析",
+  "source_prd": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_091807_457690_prd.md",
+  "source_tweet": "https://x.com/monkeyjiang/status/2039295737066860605",
+  "methodology_author": "@monkeyjiang",
+  "created_at": "2026-04-03",
+  "mcp_tools_used": [
+    "ant_spot_market_structure",
+    "ant_token_analytics",
+    "ant_market_sentiment",
+    "ant_market_indicators",
+    "ant_etf_fund_flow"
+  ],
+  "data_coverage": {
+    "covered": 7,
+    "partial": 1,
+    "uncovered": 1,
+    "notes": "原版比特币泡沫指数为第三方私有指标，以MVRV+NVT+情绪+RSI+ETF代理组合近似还原"
+  },
+  "signal_dimensions": [
+    {"name": "MVRV", "weight": 0.30, "condition": "< 1.0 或历史 < 25th percentile"},
+    {"name": "NVT", "weight": 0.20, "condition": "< 历史 25th percentile"},
+    {"name": "市场情绪", "weight": 0.20, "condition": "extreme_fear 或 fear"},
+    {"name": "周线RSI", "weight": 0.15, "condition": "< 35"},
+    {"name": "ETF资金流", "weight": 0.15, "condition": "stable 或 inflow"}
+  ],
+  "validation": "passed"
+}
