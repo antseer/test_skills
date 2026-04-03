@@ -1,0 +1,37 @@
+{
+  "skill_id": "token-resilience-scanner",
+  "skill_name": "代币韧性周报生成器",
+  "source_prd": "data/prd/prd_20260403_093935_38df00_prd.md",
+  "job_id": "prd_20260403_093935_38df00",
+  "created_at": "2026-04-03",
+  "strategy_intent": "在大盘承压周期中，以 ETH/SOL 为基准，通过双向 beta（up_alpha + down_alpha）量化候选代币的韧性，按 T1/T2/弱势三档分层输出标准化 Markdown 周报，辅助投研人员快速定位抗跌板块和下周观察标的",
+  "methodology_attribution": "@Guolier8 (https://x.com/Guolier8/status/2039953528643535218)",
+  "data_sources": [
+    {
+      "tool": "ant_spot_market_structure",
+      "query_types": ["coins_markets"],
+      "coverage": "high",
+      "notes": "sparkline 提供 7 天近似每日收盘价序列；精确多日历史数据可能需外部 CoinGecko /market_chart 补充"
+    },
+    {
+      "tool": "ant_market_sentiment",
+      "query_types": ["coin_detail"],
+      "coverage": "partial",
+      "notes": "覆盖主流代币，长尾代币可能无数据，降级为手动叙事标注"
+    },
+    {
+      "tool": "ant_fund_flow",
+      "query_types": ["exchange_netflow"],
+      "coverage": "partial",
+      "notes": "主要覆盖 BTC/ETH，山寨币覆盖度待实测，作为可选增强步骤"
+    }
+  ],
+  "files_created": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json",
+    "scripts/resilience_scanner.py"
+  ],
+  "validation_status": "passed",
+  "notes": "与已有的 token-resilience-weekly 技能的差异：本技能新增显式双向 beta 指标（up_alpha/down_alpha）、流动性过滤（min_daily_volume_usd）、Step 5 情绪标签增强、Step 6 完整报告模板，适合更精确的量化场景"
+}
