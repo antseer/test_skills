@@ -1,72 +1,164 @@
-# BTC Bubble Index Bottom Monitor
+# btc-bubble-index-bottom-monitor
 
-## What This Skill Does
+比特币泡沫指数底部监控 -- 用链上和市场多维数据检测 BTC 是否进入周期底部区域
 
-This skill calculates an approximate Bitcoin Bubble Index (0-100) by combining 6 dimensions of on-chain and market data, and identifies when Bitcoin enters a cyclical bottom zone.
+## 这个工具做什么？
 
-When the composite index drops to or below 10, it signals that Bitcoin is in a bottom area with very limited downside -- a pattern that has held consistently since 2022.
+你想知道"BTC 现在到底了吗？"，但只看价格或单一指标容易被噪音误导。这个工具帮你把 6 个维度的数据综合到一起，算出一个 0-100 的"泡沫指数"：
 
-## How to Use
+1. 先拿到 BTC 当前价格，算出它偏离 200 日均线多远
+2. 再查链上估值指标（MVRV 看市场盈亏、NVT 看链上活跃度）、市场情绪、交易所资金进出、ETF 机构资金流
+3. 把这 6 个维度的数据归一化后加权合成一个分数 -- 分数越低越接近底部
 
-**Trigger words:** 泡沫指数, bubble index, 底部检测, bottom detection, BTC底部, 比特币泡沫, 周期底部判断
+指数跌到 10 以下就触发"底部信号"，意思是多项指标同时确认 BTC 处于历史底部区域。
 
-**Usage modes:**
-- Scheduled daily/weekly check (automated patrol)
-- Event-driven trigger when BTC price drops significantly
+方法论来自 @monkeyjiang 提出的"比特币泡沫指数"框架。由于原版指数来源不公开，本工具通过 Antseer MCP 可获取的数据进行近似还原，输出标注为"近似泡沫指数"。
 
-**Input parameters:**
+## 怎么用？
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| asset | bitcoin | Target asset (currently BTC only) |
-| bubble_threshold | 10 | Index threshold for bottom signal |
-| lookback_days | 365 | Historical lookback period in days |
-| ma_period | 200 | Moving average period for price deviation |
-| alert_enabled | true | Send alerts when threshold is hit |
+```
+/btc-bubble-index-bottom-monitor
+```
 
-## Example Output
+或带参数：
 
-The skill produces a structured report with:
-- Composite bubble index value (0-100)
-- Signal level: bottom / undervalued / neutral / overvalued / bubble
-- Per-dimension scores with weights
-- Historical validation statistics (hit rate, average returns)
-- Text assessment summarizing the findings
+```
+/btc-bubble-index-bottom-monitor bitcoin --bubble_threshold=10 --lookback_days=365
+```
 
-Signal levels:
-- Index <= 10: Bottom signal (historically reliable since 2022)
-- 10-30: Undervalued
-- 30-70: Neutral
-- 70-90: Overvalued
-- >= 90: Bubble warning
+**参数说明：**
 
-## Data Sources
+| 参数 | 含义 | 默认值 |
+|------|------|--------|
+| asset | 目标资产（当前仅支持 bitcoin） | bitcoin |
+| bubble_threshold | 底部信号触发阈值 | 10 |
+| lookback_days | 回看多少天的历史数据 | 365 |
+| ma_period | 长期均线周期 | 200 天 |
+| alert_enabled | 触及阈值时是否告警 | true |
 
-All data is sourced via Antseer MCP tools:
+## 会输出什么？
 
-| Data | MCP Tool | query_type |
-|------|----------|------------|
-| BTC price | ant_spot_market_structure | simple_price |
-| Market cap, volume | ant_spot_market_structure | coins_markets |
-| MVRV ratio | ant_token_analytics | mvrv |
-| NVT ratio | ant_token_analytics | nvt |
-| Market sentiment | ant_market_sentiment | coin_detail |
-| Exchange netflow | ant_fund_flow | exchange_netflow |
-| Exchange reserve | ant_fund_flow | exchange_reserve |
-| BTC ETF flow | ant_etf_fund_flow | btc_etf_flow |
+一份完整的泡沫指数监控报告，模拟输出如下：
 
-## Limitations and Disclaimers
+```
+══════════════════════════════════════════════════
+  比特币泡沫指数底部监控报告
+══════════════════════════════════════════════════
 
-- This is an **approximate** reconstruction of the Bitcoin Bubble Index, not the exact original indicator referenced in the source tweet.
-- On-chain metrics (MVRV, NVT) may have T+1 data delay.
-- Historical validation sample is small (approximately 3-4 bottom signals since 2022), so statistical significance is limited.
-- Dimension weights are empirically set and may need backtesting optimization.
-- The bottom threshold may need upward adjustment over time as Bitcoin market cap grows (the index floor tends to rise each cycle).
-- Only supports BTC; not applicable to altcoins.
-- This is a mid-to-long cycle indicator, not suitable for short-term trading decisions.
-- Black swan events (e.g., sudden regulatory changes) may temporarily invalidate historical patterns.
-- **Not investment advice.**
+  综合泡沫指数: 8.3 / 100
+  信号等级: !! 底部信号 !!
 
-## Source
+──────────────────────────────────────────────────
+  BTC 当前价格: $63,500
+  200日均线:     $72,800
+  价格偏离度:    -12.8%
+──────────────────────────────────────────────────
+  各维度评分:
+  |- 价格偏离度 (25%):   6/100  <- 显著低于长期均线
+  |- MVRV 比率 (25%):    9/100  <- MVRV=0.92, 市场整体亏损
+  |- NVT 比率 (15%):     12/100 <- 链上活跃度相对偏高
+  |- 市场情绪 (15%):     8/100  <- 极度恐惧
+  |- 交易所净流量 (10%): 5/100  <- 持续大额净流出（吸筹）
+  |- ETF 资金流 (10%):   11/100 <- 近期小幅净流入
+──────────────────────────────────────────────────
+  历史验证:
+  |- 过去 4 次触发底部信号
+  |- 30 天后平均涨幅: +18.5%
+  |- 90 天后平均涨幅: +42.3%
+  |- 历史胜率: 100% (4/4)
+──────────────────────────────────────────────────
+  综合评估:
+  泡沫指数 8.3 已跌破阈值 10，触发底部信号。
+  当前 BTC 价格 $63,500 处于历史底部区域。
+  多项链上指标（MVRV<1、交易所持续净流出、情绪极度恐惧）
+  共同确认底部特征。向下空间有限，中长期配置价值显著。
 
-Based on methodology from @monkeyjiang: https://x.com/monkeyjiang/status/2039295737066860605
+  注意: 本指数为近似还原值，非原版比特币泡沫指数。
+  方法论归属原作者 @monkeyjiang。仅供参考，不构成投资建议。
+══════════════════════════════════════════════════
+```
+
+## 什么时候用？什么时候不适合？
+
+**适合：**
+- BTC 价格大幅下跌，想快速判断是否到了历史底部区域
+- 每周定期巡检，跟踪泡沫指数的趋势变化
+- 做中长线配置决策时，需要一个综合多维度的估值参考
+- 想了解当前 MVRV、NVT、情绪、资金流等指标的综合画面
+
+**不适合：**
+- 短线交易（日内或几天级别）-- 本指标是中长周期工具，反应慢
+- 山寨币分析 -- 泡沫指数逻辑专门为 BTC 设计，山寨币不适用
+- 追求精确的买卖点位 -- 本工具只判断"是否在底部区域"，不预测具体价格
+- 替代专业投研 -- 这是辅助工具，不能代替对宏观环境和基本面的独立判断
+
+## 前置依赖
+
+### 为什么需要装 MCP？
+
+这个工具需要实时的链上和市场数据才能工作。MCP（Model Context Protocol）服务器是数据来源 -- 把它理解成"给 Claude 接上数据管道"。不装的话，Claude 拿不到数据，分析就跑不起来。
+
+本 Skill 依赖以下 Antseer MCP 工具：
+- `ant_spot_market_structure` -- BTC 价格和市场数据
+- `ant_token_analytics` -- MVRV、NVT 等链上指标
+- `ant_market_sentiment` -- 市场情绪评分
+- `ant_fund_flow` -- 交易所资金流向
+- `ant_etf_fund_flow` -- ETF 资金流
+
+### MCP 服务安装
+
+#### Antseer MCP
+
+**Claude Code (CLI)**
+```bash
+claude mcp add --transport http --scope user antseer https://mcp.antseer.com/mcp
+```
+
+**OpenClaw / Claw**
+
+在设置页面添加 MCP 服务器，填写：
+- 名称：`antseer`
+- URL：`https://mcp.antseer.com/mcp`
+- 传输类型：`http`
+
+**OpenCode**
+
+在配置文件 `opencode.json` 中添加：
+```json
+{
+  "mcpServers": {
+    "antseer": {
+      "type": "http",
+      "url": "https://mcp.antseer.com/mcp"
+    }
+  }
+}
+```
+
+**通用 MCP 客户端**
+
+任何支持 MCP 协议的客户端均可接入，核心参数：
+- MCP 端点：`https://mcp.antseer.com/mcp`
+- 传输类型（Transport）：`http`
+- 作用域（Scope）：`user`（推荐，跨项目共享）
+
+安装完成后，**重启你的 Agent 客户端**以激活 MCP 服务。
+
+## 指标说明
+
+如果你不熟悉这些指标，这里简单解释：
+
+- **MVRV**（Market Value to Realized Value）-- 比特币市值与已实现市值的比值。小于 1 说明整个市场平均亏损，是典型的底部特征。
+- **NVT**（Network Value to Transactions）-- 类比股票的市盈率，衡量市值相对链上交易量是否偏高。
+- **MA200** -- 200 天移动平均线，代表长期趋势。价格远低于 MA200 通常是超卖信号。
+- **交易所净流量** -- BTC 从交易所流出（投资者提币囤币）还是流入（准备卖出）。持续流出是底部吸筹信号。
+- **ETF 资金流** -- 机构通过 BTC ETF 买入还是卖出。机构在低位买入是底部确认信号。
+
+## 免责声明
+
+- 本工具基于历史链上和市场数据进行分析，历史规律不能保证未来表现
+- "近似泡沫指数"是通过公开可获取的数据对原版指标的还原尝试，存在系统性偏差
+- 分析方法论归属原作者 @monkeyjiang，本工具仅做技术实现
+- 历史验证样本量有限（2022 年至今约 3-4 次底部信号），统计显著性不足
+- 各维度权重为经验设定值，非严格回测优化结果
+- 本工具不构成任何投资建议，使用者需自行承担投资决策的全部风险
