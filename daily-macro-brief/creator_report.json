@@ -1,0 +1,42 @@
+{
+  "skill_id": "daily-macro-brief",
+  "skill_name": "宏观日简报生成器",
+  "source_prd": "data/prd/prd_20260403_091939_03000d_prd.md",
+  "source_tweet": "https://x.com/0xcryptowizard/status/2030860218557677963",
+  "source_gap_id": null,
+  "created_at": "2026-04-03",
+  "strategy_intent": "每日自动聚合加密市场结构数据与宏观经济指标，生成标准化 5 section 宏观简报，输出 Risk-On/Off 评分（0-10），辅助跨资产投研决策",
+  "mcp_tools_used": [
+    "ant_macro_economics",
+    "ant_spot_market_structure",
+    "ant_futures_market_structure",
+    "ant_etf_fund_flow",
+    "ant_stablecoin",
+    "ant_market_sentiment",
+    "ant_smart_money",
+    "ant_precious_metal_tokens"
+  ],
+  "external_dependencies": [
+    "Yahoo Finance (CL=F, ^GSPC, ^VIX)",
+    "FRED API (DGS10, DGS2, BAMLH0A0HYM2, WALCL)",
+    "NewsAPI / The Block RSS / Blockworks RSS (optional)"
+  ],
+  "output_sections": [
+    "今日焦点",
+    "关键事件 (Top 5)",
+    "信号解读",
+    "历史类比 (optional)",
+    "资产含义"
+  ],
+  "risk_score": {
+    "range": "0-10",
+    "labels": {
+      "8-10": "极度 Risk-On",
+      "6-7.9": "Risk-On",
+      "4-5.9": "中性",
+      "2-3.9": "Risk-Off",
+      "0-1.9": "极度 Risk-Off"
+    }
+  },
+  "validation_status": "pending"
+}
