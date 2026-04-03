@@ -1,0 +1,19 @@
+{
+  "skill_id": "token-resilience-weekly",
+  "skill_name": "代币韧性周报分析",
+  "source": "prd",
+  "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_083544_76ba21_prd.md",
+  "methodology_attribution": "@Guolier8",
+  "tweet_url": "https://x.com/Guolier8/status/2039953528643535218",
+  "mcp_dependencies": ["ant_spot_market_structure"],
+  "validation": {
+    "status": "passed",
+    "message": "Skill is valid!"
+  },
+  "files_created": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json"
+  ],
+  "timestamp": "2026-04-03T08:35:44Z"
+}

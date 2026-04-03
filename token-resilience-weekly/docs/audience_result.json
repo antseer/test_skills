@@ -1,0 +1,144 @@
+{
+  "task_type": "audience_analysis",
+  "status": "success",
+  "skill_id": "token-resilience-weekly",
+  "timestamp": "2026-04-03T09:00:00Z",
+  "output": {
+    "personas": [
+      {
+        "type": "portfolio_trader",
+        "description": "中长线加密货币交易员，持有 5-20 个代币的组合仓位，需要定期评估各持仓的相对强弱以优化仓位配置",
+        "experience_level": "intermediate",
+        "primary_goal": "在大盘承压时识别哪些持仓最抗跌、哪些在拖后腿，为仓位调整提供数据支撑",
+        "pain_points": [
+          "手动逐币比较涨跌幅耗时且容易遗漏",
+          "CoinGecko/CoinMarketCap 只展示绝对涨跌幅，缺少与基准的相对比较",
+          "缺乏系统化的韧性分级框架，只能靠感觉判断强弱",
+          "每周重复相同的数据采集和计算流程"
+        ],
+        "tool_habits": ["CoinGecko", "TradingView", "CoinGlass", "Excel/Google Sheets"],
+        "usage_frequency": "每周 1 次定期执行，大盘急跌时额外触发",
+        "capital_range": "$10K - $500K",
+        "verification_status": "partially_verified",
+        "verification_evidence": "ant_market_sentiment 工具不可用，无法进行社交数据验证。基于 PRD 来源推文（@Guolier8）的公开分析框架推导，该推文方法论明确面向持仓管理场景，且分级逻辑（T1/T2/弱势）直接对应仓位调整决策。"
+      },
+      {
+        "type": "crypto_researcher",
+        "description": "投研人员或基金分析师，负责定期出具市场周报或板块分析报告，需要量化数据支撑研究观点",
+        "experience_level": "advanced",
+        "primary_goal": "快速生成带有量化指标的代币强弱对比报告，减少数据处理时间，聚焦归因分析",
+        "pain_points": [
+          "每周花费 2-4 小时手动拉取价格数据并计算相对收益",
+          "不同数据源的价格数据时间粒度不一致，需要人工对齐",
+          "逐日行为模式分析（如'跌时不跌、涨时跟涨'）需要大量手动标注",
+          "报告格式每周重复但难以完全模板化"
+        ],
+        "tool_habits": ["Dune Analytics", "CoinGecko API", "Python/Jupyter", "Notion"],
+        "usage_frequency": "每周 1 次固定产出",
+        "capital_range": "管理 $1M+ 基金或服务此类客户",
+        "verification_status": "partially_verified",
+        "verification_evidence": "ant_market_sentiment 工具不可用。推导依据：PRD 明确将'投研人员'和'基金组合管理者'列为目标用户；skill 输出的结构化周报格式（含逐日矩阵、分级表、总结叙述）高度契合研报产出需求。"
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "每周定期韧性复盘",
+        "trigger": "每周日或周一，用户运行 skill 对持仓或关注列表进行过去一周的韧性分级",
+        "frequency": "每周 1 次",
+        "value": "系统化替代手动逐币比较，节省 1-3 小时/周的数据处理时间"
+      },
+      {
+        "scenario": "大盘急跌后快速评估",
+        "trigger": "BTC/ETH 周内跌幅超过 5%，用户需要快速了解哪些代币扛住了下跌",
+        "frequency": "每月 1-3 次（取决于市场波动）",
+        "value": "事件驱动的快速响应，在市场恐慌时提供数据化的冷静判断"
+      },
+      {
+        "scenario": "板块轮动分析",
+        "trigger": "用户将同一赛道（如 AI、DePIN、L2）的代币作为 watchlist，对比板块内相对强弱",
+        "frequency": "每周或事件驱动",
+        "value": "识别板块内的领头羊和落后者，辅助板块配置决策"
+      },
+      {
+        "scenario": "投研周报生产",
+        "trigger": "研究员需要在周报中加入代币强弱对比章节",
+        "frequency": "每周 1 次",
+        "value": "自动生成结构化数据和分级结论，研究员只需补充归因分析"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "约 200 万活跃的加密货币中长线交易者和投研人员，日常需要进行代币相对强弱比较",
+      "serviceable": "约 20 万使用量化工具或定期产出分析报告的用户，愿意采用结构化分析框架",
+      "immediately_reachable": "约 2-5 万已使用 Claude Code 或类似 AI 工具的加密货币分析用户",
+      "confidence": "medium",
+      "reasoning": "相对强度分析是经典投资方法论在 crypto 领域的应用，需求基础扎实。但 skill 的使用门槛（需要维护 watchlist、理解分级逻辑）限制了即时可触达市场。无社交数据验证，市场规模估算置信度为中等。"
+    },
+    "competitive_landscape": [
+      {
+        "name": "CoinGecko Portfolio",
+        "overlap": "基础持仓追踪和涨跌幅展示",
+        "differentiation": "本 Skill 提供相对于基准的韧性分级，而非绝对涨跌幅；包含逐日行为模式分析"
+      },
+      {
+        "name": "TradingView 相对强度指标 (RSI/RS)",
+        "overlap": "技术分析层面的相对强度评估",
+        "differentiation": "本 Skill 聚焦周度组合级别的韧性分级，而非单币 K 线技术指标；输出为结构化报告而非图表"
+      },
+      {
+        "name": "手动 Excel/Sheets 分析",
+        "overlap": "完全相同的分析逻辑（如原推文作者的手动流程）",
+        "differentiation": "本 Skill 自动化了数据采集、计算、分级、标注的全流程，将 2-4 小时的手动工作缩短到几分钟"
+      },
+      {
+        "name": "Messari/TokenTerminal 周报",
+        "overlap": "专业级加密货币市场分析报告",
+        "differentiation": "本 Skill 允许用户自定义 watchlist 和分级阈值，比通用周报更贴合个人持仓"
+      }
+    ],
+    "social_validation": {
+      "keywords_planned": ["token resilience", "relative strength crypto", "altcoin outperformance", "market correction crypto", "alpha generation"],
+      "total_posts_found": 0,
+      "validation_status": "unavailable",
+      "reason": "ant_market_sentiment MCP 工具在当前环境中不可用，无法执行社交数据搜索验证",
+      "key_findings": [
+        "社交验证未执行，画像完全基于 skill 文档推导",
+        "PRD 来源推文（@Guolier8）本身作为社交信号，证明该分析方法论在 crypto 社区有自然讨论",
+        "方法论基于经典的相对强度分析，在传统金融中有成熟用户群，迁移到 crypto 领域的需求逻辑成立"
+      ]
+    },
+    "optimization_suggestions": [
+      {
+        "finding": "watchlist 维护是纯手动环节，用户需要自己决定追踪哪些代币",
+        "action": "增加'热门板块预设'功能：提供 AI、DePIN、L2、Meme 等板块的预设 watchlist，用户可一键加载或在此基础上自定义",
+        "expected_impact": "降低使用门槛，让不确定该追踪什么的用户也能快速上手；增加使用频率"
+      },
+      {
+        "finding": "韧性分级需要用户理解 T1/T2/弱势的含义和阈值参数",
+        "action": "增加'简报模式'：输出一句话结论（如'本周你的持仓中 TAO 最强、STORY 最弱，建议关注'），默认隐藏技术细节，用户可展开查看完整数据",
+        "expected_impact": "覆盖更多中级交易者，将 skill 从'分析工具'升级为'决策助手'"
+      },
+      {
+        "finding": "skill 为纯回顾性分析，不提供前瞻信号，使用频率上限为每周 1 次",
+        "action": "增加'韧性追踪'模式：连续多周追踪同一 watchlist，输出韧性趋势变化（如'KAITO 连续 3 周 T1，韧性持续增强'），提供跨周趋势信号",
+        "expected_impact": "提升 skill 的纵向价值，从单次快照升级为趋势追踪工具；增加用户粘性"
+      },
+      {
+        "finding": "数据精度存在 sparkline 近似值的局限性，可能影响专业用户信任度",
+        "action": "在报告中增加'数据置信度指标'：当 sparkline 数据点不足 7 天或时间粒度不一致时，明确标注受影响的代币和指标",
+        "expected_impact": "增强专业用户（研究员、基金分析师）的信任度，降低因数据精度问题导致的用户流失"
+      },
+      {
+        "finding": "skill 不解释韧性原因，而原推文作者会附加归因分析（如'AI叙事驱动'），这是用户实际需要的关键信息",
+        "action": "结合 ant_market_sentiment 数据，为 T1 代币自动附加'可能的韧性驱动因素'（如相关话题热度上升、KOL 讨论增加等社交信号）",
+        "expected_impact": "将 skill 从'数据计算工具'升级为'洞察生成工具'，显著提升对投研人员的价值"
+      }
+    ]
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_083544_76ba21_prd.md",
+    "skill_path": "/home/ubuntu/steve/auto-skill-creator/skills_workflow/_data/skills/generated/token-resilience-weekly/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260403_083544_76ba21_audience_result.json",
+    "social_validation_available": false,
+    "analysis_date": "2026-04-03"
+  }
+}
