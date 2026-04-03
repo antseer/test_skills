@@ -1,0 +1,45 @@
+{
+  "skill_id": "btc-bubble-index-bottom-monitor",
+  "skill_name": "比特币泡沫指数底部监控",
+  "source_prd": "prd_20260403_033424_16c7b1",
+  "files_created": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json"
+  ],
+  "mcp_tools_used": [
+    "ant_spot_market_structure",
+    "ant_token_analytics",
+    "ant_market_sentiment",
+    "ant_fund_flow",
+    "ant_etf_fund_flow"
+  ],
+  "dimensions": {
+    "price_deviation": {
+      "weight": 0.25,
+      "source": "ant_spot_market_structure"
+    },
+    "mvrv_ratio": {
+      "weight": 0.25,
+      "source": "ant_token_analytics"
+    },
+    "nvt_ratio": {
+      "weight": 0.15,
+      "source": "ant_token_analytics"
+    },
+    "market_sentiment": {
+      "weight": 0.15,
+      "source": "ant_market_sentiment"
+    },
+    "exchange_flow": {
+      "weight": 0.10,
+      "source": "ant_fund_flow"
+    },
+    "etf_flow": {
+      "weight": 0.10,
+      "source": "ant_etf_fund_flow"
+    }
+  },
+  "status": "completed",
+  "created_at": "2026-04-03T03:40:00Z"
+}

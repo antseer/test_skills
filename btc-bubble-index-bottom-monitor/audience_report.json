@@ -1,0 +1,115 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "output": {
+    "personas": [
+      {
+        "type": "long_term_btc_hodler",
+        "description": "长期持有比特币的个人投资者，信奉周期论，核心诉求是在熊市底部区域加仓。通常持仓周期 1-4 年，不频繁交易，但会在关键周期节点（如泡沫指数触底）做出大额配置决策。对链上数据有一定了解，但缺乏系统化的多维度综合判断工具。",
+        "experience_level": "intermediate",
+        "primary_goal": "在比特币周期底部区域识别最佳加仓时机，避免在恐慌中割肉",
+        "pain_points": [
+          "无法综合判断多个链上指标（MVRV、NVT、情绪等）的整体信号",
+          "底部区域的极度恐惧情绪导致难以理性决策",
+          "缺乏历史回测验证来增强底部判断的信心",
+          "各平台数据分散，需要逐一查看多个网站"
+        ]
+      },
+      {
+        "type": "institutional_researcher",
+        "description": "加密货币基金、家族办公室或投研机构的分析师/研究员，负责为机构级资金配置提供周期定位和估值报告。需要结构化、可审计的分析框架来支撑投资委员会决策，对数据来源和方法论的透明度要求较高。",
+        "experience_level": "advanced",
+        "primary_goal": "构建系统化的 BTC 周期定位框架，为机构配置决策提供量化依据",
+        "pain_points": [
+          "需要可复现、可解释的分析框架而非主观判断",
+          "链上数据（MVRV、NVT）获取和归一化处理耗时",
+          "缺乏将多维度指标综合为单一可比较指数的标准化方法",
+          "ETF 资金流与链上指标的交叉验证工作量大"
+        ]
+      },
+      {
+        "type": "macro_cycle_trader",
+        "description": "关注比特币宏观周期的中线交易者，交易频率低（每月 1-3 次），但单笔金额较大。善于使用技术分析和链上指标辅助择时，追求在周期拐点附近建仓/减仓。对泡沫指数这类综合指标有较强的接受度和理解力。",
+        "experience_level": "advanced",
+        "primary_goal": "在周期底部和顶部区域获取明确的仓位管理信号",
+        "pain_points": [
+          "单一指标（如仅看 MVRV 或仅看情绪）容易产生假信号",
+          "需要多维度交叉确认来提升信号置信度",
+          "历史样本量有限（2022 年至今仅 3-4 次底部信号），担心过拟合",
+          "底部阈值可能随市场体量增长而漂移，需要动态调整"
+        ]
+      },
+      {
+        "type": "crypto_content_creator",
+        "description": "加密货币领域的 KOL、自媒体作者或投研社区运营者，需要定期输出有数据支撑的市场分析内容。泡沫指数报告的结构化输出（6 维度评分、信号等级、历史胜率）非常适合作为内容素材。",
+        "experience_level": "intermediate",
+        "primary_goal": "获取结构化的周期分析数据用于内容创作和社区分享",
+        "pain_points": [
+          "手动收集和整理多维度数据耗时且容易遗漏",
+          "缺乏自动化的定期报告生成工具",
+          "需要直观、可视化的输出格式方便截图分享",
+          "读者质疑分析结论时缺乏可追溯的数据依据"
+        ]
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "泡沫指数触及底部阈值时自动告警，提示加仓窗口",
+        "trigger": "综合泡沫指数 (bubble_index) 跌至 10 以下，6 个维度中至少 4 个处于底部区间（得分低于 15）",
+        "frequency": "每个比特币周期约 1-2 次，间隔约 12-18 个月"
+      },
+      {
+        "scenario": "每日定期巡检生成泡沫指数报告，持续跟踪周期位置",
+        "trigger": "定时调度（每日固定时间），自动采集 6 维度数据并计算综合指数",
+        "frequency": "每日 1 次，作为日常监控基线"
+      },
+      {
+        "scenario": "BTC 价格急跌超过 10% 时事件驱动触发，快速评估是否进入底部区域",
+        "trigger": "BTC 24 小时价格跌幅超过 10%，或 7 日跌幅超过 20%",
+        "frequency": "每年约 3-5 次，与市场恐慌事件关联"
+      },
+      {
+        "scenario": "泡沫指数进入高估/泡沫区域时发出风险警告，提示减仓",
+        "trigger": "综合泡沫指数 (bubble_index) 升至 90 以上，多维度确认泡沫特征",
+        "frequency": "每个比特币周期约 1 次，通常在牛市顶部区域"
+      },
+      {
+        "scenario": "投研报告撰写时调用历史验证数据，获取信号胜率和历史回报统计",
+        "trigger": "用户手动触发，请求包含历史验证的完整分析报告",
+        "frequency": "每周 1-2 次，配合投研报告发布节奏"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球约 200-300 万活跃的比特币中长线投资者关注周期分析和链上指标（包括使用 Glassnode、CryptoQuant、LunarCrush 等平台的用户群体）",
+      "serviceable": "约 10-20 万使用量化工具或自动化监控手段进行 BTC 周期判断的用户，其中包括个人交易者、投研机构分析师、加密基金从业者。这部分用户对综合指数类工具有明确需求且愿意为自动化告警付费或投入使用成本。",
+      "confidence": "medium"
+    },
+    "competitive_landscape": [
+      {
+        "name": "Glassnode Studio（Advanced 订阅）",
+        "overlap": "高度重叠 — 提供 MVRV、NVT、SOPR 等链上指标的可视化面板和告警功能",
+        "differentiation": "本 Skill 将 6 个维度自动归一化为单一综合泡沫指数（0-100），降低用户逐指标判断的认知负荷；Glassnode 提供原始指标但需用户自行综合解读。此外本 Skill 集成 ETF 资金流维度，Glassnode 不直接覆盖。"
+      },
+      {
+        "name": "CryptoQuant 告警系统",
+        "overlap": "部分重叠 — 提供交易所净流量、MVRV 等链上指标的自定义告警",
+        "differentiation": "CryptoQuant 的告警基于单一指标阈值触发，本 Skill 提供多维度加权综合信号，减少单一指标假信号。同时本 Skill 内置历史验证模块（胜率/回报统计），CryptoQuant 需用户自行回测。"
+      },
+      {
+        "name": "LunarCrush Galaxy Score / Alerts",
+        "overlap": "低度重叠 — LunarCrush 侧重社交情绪和话题热度，与本 Skill 的情绪维度有交集",
+        "differentiation": "LunarCrush 不覆盖链上估值指标（MVRV、NVT）和 ETF 资金流，无法提供完整的周期底部判断。本 Skill 将情绪仅作为 6 维度之一（权重 15%），避免纯情绪驱动的误判。"
+      },
+      {
+        "name": "Bitcoin Magazine Pro（比特币杂志专业版）",
+        "overlap": "中度重叠 — 提供多种比特币周期指标（如 MVRV Z-Score、Pi Cycle Top/Bottom 等）的仪表盘",
+        "differentiation": "Bitcoin Magazine Pro 提供丰富的独立指标展示，但缺乏自动化的综合评分和告警触发机制。本 Skill 的核心差异在于将分散指标聚合为可操作的单一信号，并支持自动化定期巡检和事件驱动告警。"
+      }
+    ]
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_033424_16c7b1_prd.md",
+    "skill_path": "skills_workflow/_data/skills/generated/btc-bubble-index-bottom-monitor/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260403_033424_16c7b1_audience_result.json"
+  }
+}
