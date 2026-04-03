@@ -1,0 +1,88 @@
+{
+  "skill_id": "defi-exchange-tradfi-valuation",
+  "skill_name": "DeFi 交易所对标 TradFi 估值分析",
+  "source_prd": "prd_20260403_125325_5ebc5c",
+  "source_prd_path": "data/prd/prd_20260403_125325_5ebc5c_prd.md",
+  "created_at": "2026-04-03",
+  "creator_version": "creator-agent-v1",
+  "strategy_intent": {
+    "opportunity_type": "DeFi 衍生品协议 TradFi 对标估值",
+    "methodology": "P/S 倍数框架 + DCF 三情景估值",
+    "methodology_source": "@Ru7Longcrypto (2026-03-14)",
+    "target_users": ["加密投研人员", "宏观量化交易员", "机构配置团队"]
+  },
+  "data_sources": {
+    "mcp_tools": [
+      {
+        "tool": "ant_spot_market_structure",
+        "query_type": "coins_markets",
+        "coverage": "full",
+        "data": "代币价格、市值、流通量、24h 交易量"
+      },
+      {
+        "tool": "ant_protocol_tvl_yields_revenue",
+        "query_type": "protocol_revenue",
+        "coverage": "full",
+        "data": "协议月度收入时间序列，用于计算 TTM 收入"
+      },
+      {
+        "tool": "ant_protocol_tvl_yields_revenue",
+        "query_type": "dex_overview",
+        "coverage": "full",
+        "data": "DEX 交易量历史数据"
+      },
+      {
+        "tool": "ant_perp_dex",
+        "query_type": "perp_dex_position_by_coin",
+        "coverage": "full",
+        "data": "链上永续合约 OI 及分布"
+      },
+      {
+        "tool": "ant_token_analytics",
+        "query_type": "emissions",
+        "coverage": "partial",
+        "data": "代币解锁计划与验证者排放（回购销毁记录覆盖有限）"
+      }
+    ],
+    "external_required": [
+      {
+        "data": "TradFi 交易所 P/S 倍数（CME/ICE/CBOE）",
+        "source": "Yahoo Finance / Macrotrends / Bloomberg",
+        "update_frequency": "季度"
+      },
+      {
+        "data": "CME/外汇/0DTE 期权日均交易量（TAM 测算）",
+        "source": "CME Group 月度报告、BIS 外汇调查、CBOE 官方数据",
+        "update_frequency": "月度/年度"
+      },
+      {
+        "data": "协议回购销毁记录",
+        "source": "Dune Analytics 定制看板 / 项目官方公告",
+        "update_frequency": "实时/人工核对"
+      }
+    ]
+  },
+  "analysis_steps": [
+    "Step 1: 代币市值与价格数据采集",
+    "Step 2: 协议 TTM 收入与 P/S 计算",
+    "Step 3: 链上 OI 追踪",
+    "Step 4: DEX 交易量趋势分析",
+    "Step 5: 代币供应压力评估",
+    "Step 6: TradFi 基准 P/S 对标",
+    "Step 7: TAM 测算（可选）",
+    "Step 8: DCF 三情景估值",
+    "Step 9: 综合估值评估"
+  ],
+  "output_format": "Markdown 综合报告，含基础估值指标表、TradFi 对标、链上衍生品数据、供应压力、DCF 情景分析、综合结论、主要风险",
+  "validation": {
+    "status": "pending",
+    "script": ".claude/agents/creator-resources/scripts/quick_validate.py"
+  },
+  "limitations": [
+    "TradFi P/S 数据需人工输入，MCP 不覆盖",
+    "回购销毁记录 MCP 覆盖有限，需外部补充",
+    "DCF 模型对增速假设高度敏感",
+    "链上 OI 仅含 DEX 永续，不含 CeFi 同类产品"
+  ],
+  "disclaimer": "本工具基于历史数据，不构成投资建议。方法论归属 @Ru7Longcrypto。"
+}
