@@ -1,0 +1,37 @@
+{
+  "skill_id": "prediction-market-ev-trading",
+  "skill_name": "预测市场 +EV 量化交易分析",
+  "source": "prd",
+  "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_053839_77a4fa_prd.md",
+  "job_id": "prd_20260403_053839_77a4fa",
+  "methodology_attribution": "@NFTCPS",
+  "generation_date": "2026-04-03",
+  "files_generated": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json"
+  ],
+  "mcp_coverage": {
+    "fully_covered": 0,
+    "partially_covered": 5,
+    "not_covered": 3,
+    "details": {
+      "partially_covered": [
+        "ant_spot_market_structure (simple_price)",
+        "ant_futures_market_structure (futures_price_history)",
+        "ant_market_indicators (rsi/macd)",
+        "ant_market_sentiment (coin_detail)",
+        "ant_macro_economics (cpi/federal_funds_rate)"
+      ],
+      "not_covered": [
+        "预测市场合约列表/赔率 (需 Polymarket CLOB API)",
+        "天气预测数据 (需 ECMWF/HRRR/METAR API)",
+        "预测市场结算结果 (需 Polymarket API 或链上查询)"
+      ]
+    }
+  },
+  "validation": {
+    "status": "passed",
+    "validator": "quick_validate.py"
+  }
+}
