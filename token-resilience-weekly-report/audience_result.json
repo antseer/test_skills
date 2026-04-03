@@ -1,0 +1,158 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "job_id": "prd_20260403_130129_1b1a59",
+  "output": {
+    "personas": [
+      {
+        "type": "active_crypto_trader",
+        "name": "中长线加密交易员",
+        "description": "有 1-3 年交易经验的中长线交易者，持仓周期以周为单位，关注相对强弱和板块轮动，而非高频套利。熟悉 TradingView 技术分析，但希望用量化方式补充主观判断。",
+        "experience_level": "intermediate",
+        "primary_goal": "在大盘回调周内快速识别抗跌强势标的，提前布局潜在反弹龙头，提高胜率",
+        "pain_points": [
+          "手动翻看多个代币 K 线费时费力，难以系统比较",
+          "「感觉哪个跌少」缺乏量化依据，决策依赖主观印象",
+          "缺少上涨日/下跌日的分层对比，无法区分「真韧性」和「流动性不足假抗跌」",
+          "无法快速生成可分享的结构化分析报告"
+        ],
+        "tool_habits": ["TradingView", "CoinGecko", "Twitter/X 跟踪 KOL 分析"],
+        "use_frequency": "每周 1 次（周一复盘），大盘单周跌幅 >5% 时额外触发",
+        "capital_range": "1 万 - 50 万美元",
+        "decision_type": "交易决策辅助（加仓/轮动标的筛选）",
+        "verification_status": "partially_verified",
+        "verification_evidence": "Skill 来源推文作者 @Guolier8 的分析框架受到社区关注，表明此类分析在交易者群体中有自然需求；ant_market_sentiment 工具不可用，无法获取社交数据验证"
+      },
+      {
+        "type": "crypto_research_analyst",
+        "name": "加密投研分析师",
+        "description": "在小型加密基金、家办或投研机构工作，负责每周生成市场 recap 报告，需要量化数据支撑主观判断。熟悉 Python、Dune Analytics、CoinGlass，关注链上/链下多维度信号。",
+        "experience_level": "professional",
+        "primary_goal": "自动化生成每周代币相对强弱周报，节省人工整理时间，提升报告质量与一致性",
+        "pain_points": [
+          "每周手动整理多代币价格数据耗时（1-2 小时/次）",
+          "双向 beta 不对称性指标无现成工具，需自行编写脚本",
+          "报告标准化程度低，难以跨周比较同一代币的历史韧性",
+          "需同时覆盖 10+ 个代币，规模化痛点突出"
+        ],
+        "tool_habits": ["Python / Pandas", "Dune Analytics", "CoinGlass", "Messari", "CoinGecko API"],
+        "use_frequency": "每周 1 次，每次覆盖 10-30 个代币",
+        "capital_range": "管理 100 万美元以上资产",
+        "decision_type": "研究分析 + 风控辅助（识别系统性弱势标的）",
+        "verification_status": "inferred",
+        "verification_evidence": "PRD 明确将「投研人员、量化基金分析师」列为目标用户；ant_market_sentiment 工具不可用，无法获取社交数据验证；该群体的讨论通常在私密渠道进行，社交数据代表性有限"
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "每周一例行韧性周报",
+        "trigger": "周一早上自动或手动触发，分析上周一至周日数据",
+        "frequency": "每周一次",
+        "user_type": "active_crypto_trader + crypto_research_analyst",
+        "workflow": "输入 watchlist 代币列表 → 自动获取价格数据 → 计算韧性得分 → 输出 T1/T2/弱势分级报告",
+        "value": "省去 30-90 分钟手动整理，得到可直接引用的结构化报告"
+      },
+      {
+        "scenario": "大盘急跌事件驱动扫描",
+        "trigger": "BTC/ETH 单周跌幅超过 5%，需快速识别有哪些代币未跟跌",
+        "frequency": "不定期，通常每月 1-2 次",
+        "user_type": "active_crypto_trader",
+        "workflow": "紧急输入关注代币列表 → 快速分级 → 识别 T1 逆势标的 → 辅助加仓决策",
+        "value": "在市场恐慌期快速定位防御性标的，把握错价机会"
+      },
+      {
+        "scenario": "板块轮动研究",
+        "trigger": "研究特定叙事板块（如 AI、DePIN、DeFi）内代币的相对强弱",
+        "frequency": "每月 1-2 次（随叙事周期变化）",
+        "user_type": "crypto_research_analyst",
+        "workflow": "按板块分组输入代币 → 启用 include_narrative=true → 对比板块内部强弱分布",
+        "value": "量化识别板块内领涨/领跌标的，辅助板块轮动策略"
+      },
+      {
+        "scenario": "持仓风控监控",
+        "trigger": "定期审查现有持仓的相对强弱，识别持续弱势需考虑减仓的标的",
+        "frequency": "每周一次（与例行周报合并）",
+        "user_type": "active_crypto_trader + crypto_research_analyst",
+        "workflow": "将当前持仓列表输入 → 关注弱势警示分级的代币 → 结合其他信号决定是否减仓",
+        "value": "系统性识别持仓中的弱势标的，避免情绪化持有"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球约 200-500 万活跃加密货币交易者，关注相对强弱分析的占比约 15-20%，即 30-100 万人",
+      "serviceable": "有能力且有意愿使用 Claude Code Skill 工具的中高级交易者和研究人员，约 5-20 万人",
+      "immediate_target": "活跃使用 AI 辅助分析工具的加密交易者和分析师，约 1-5 万人",
+      "confidence": "low",
+      "notes": "市场规模估算基于 PRD 功能推导，未能通过 ant_market_sentiment 社交数据验证。真实可服务市场受 Claude Code 工具渗透率限制，当前仍属早期采用者阶段。"
+    },
+    "competitive_landscape": [
+      {
+        "name": "手动 CoinGecko 查看 + Excel/Sheets",
+        "overlap": "高度重叠（目标相同，但效率低）",
+        "differentiation": "本 Skill 将 1-2 小时的手工工作压缩至分钟级，且内置双向 alpha 量化逻辑"
+      },
+      {
+        "name": "CoinGlass（OI、资金费率、清算分析）",
+        "overlap": "部分重叠（均用于交易决策辅助）",
+        "differentiation": "CoinGlass 侧重衍生品市场，本 Skill 聚焦现货相对强弱，互补而非竞争"
+      },
+      {
+        "name": "Messari 周报 / The Block 数据报告",
+        "overlap": "部分重叠（均生成每周市场报告）",
+        "differentiation": "专业媒体覆盖范围宽，本 Skill 可定制代币 watchlist，针对性更强"
+      },
+      {
+        "name": "Python 自定义脚本（pandas + CoinGecko API）",
+        "overlap": "高度重叠（量化分析师替代方案）",
+        "differentiation": "本 Skill 无需编程，对非技术交易者可用；且已内置双向贝塔不对称性的标准计算逻辑"
+      }
+    ],
+    "social_validation": {
+      "keywords_searched": ["token resilience", "beta asymmetry", "relative strength crypto", "which tokens held up", "downside protection crypto"],
+      "total_posts_found": 0,
+      "search_method": "ant_market_sentiment tool unavailable in current environment",
+      "key_findings": [
+        "ant_market_sentiment MCP 工具在当前环境不可用，无法获取社交数据",
+        "Skill 来源推文（@Guolier8）本身是社交验证的直接证据，说明此类分析在 Crypto Twitter 上有自然传播",
+        "「韧性」分类框架（T1/T2/弱势）在推文中呈现为易于传播的格式，适合 Twitter 传播和二次引用",
+        "分析方法论（双向贝塔不对称性）属于专业圈子话题，大众讨论热度可能有限，主要在研究员和专业交易者群体内流通"
+      ]
+    },
+    "optimization_suggestions": [
+      {
+        "finding": "目标用户包含非技术交易者，但 T1/T2 分级依赖「双向贝塔不对称性」等量化概念",
+        "action": "增加简报输出模式（simple_mode=true）：输出仅包含「本周最强 / 本周最弱 / 关注标的」三行结论，隐藏 resilience_score 等技术指标",
+        "expected_impact": "降低使用门槛，覆盖更多中级交易者，提升首次使用完成率"
+      },
+      {
+        "finding": "Skill 依赖用户手动维护 symbols 参数（watchlist），每次都需要输入代币列表",
+        "action": "支持 watchlist 持久化配置（如读取用户 profile 文件或上次使用的列表），或提供预设板块模板（如 ai_tokens=TAO,KAITO,BITTENSOR; depin_tokens=IO,RENDER,FIL）",
+        "expected_impact": "减少每次调用的摩擦，提升使用频率，尤其对每周例行使用的研究分析师"
+      },
+      {
+        "finding": "当前窗口固定为 7 天，无法做跨周趋势比较",
+        "action": "增加 trend_weeks 参数，支持输出同一代币最近 N 周的韧性得分趋势（如折线图 ASCII 或趋势标注）",
+        "expected_impact": "提升报告深度，让研究分析师能识别「连续多周保持 T1」的真正强势标的，区分单周异常和持续强势"
+      },
+      {
+        "finding": "sparkline 近似数据与精确日收盘价存在 1-3% 误差，但 Skill 当前没有降级策略提示",
+        "action": "在报告结尾增加数据质量标注：当检测到高波动代币（单日振幅 >15%）时，自动触发 WebFetch 调用 CoinGecko 免费 API 获取精确日收盘价",
+        "expected_impact": "提升数据准确性，减少因 sparkline 误差导致的错误分级，增强专业用户信任"
+      },
+      {
+        "finding": "Skill 定位于「中长线交易员 + 研究分析师」，但缺乏与下游工具的联动",
+        "action": "增加输出到其他 Skill 的接口建议：T1 代币列表可直接传入 smart-money-analysis Skill 做链上验证，或传入 OI/funding rate Skill 做衍生品端验证",
+        "expected_impact": "形成分析链路，提升对研究分析师的价值，将 Skill 从单点工具升级为研究 workflow 的入口节点"
+      }
+    ],
+    "summary": "token-resilience-weekly-report Skill 的核心目标用户为两类：中长线加密交易员（寻找抗跌强势标的辅助决策）和加密投研分析师（自动化每周相对强弱报告）。Skill 的双向贝塔不对称性分析框架来源于推文驱动的真实需求，具备较强的自然用户基础。当前版本已覆盖核心分析流程，建议优化方向包括：增加简报模式降低门槛、支持 watchlist 持久化、增加跨周趋势追踪、提升数据质量保障，以及与下游分析 Skill 的联动接口。"
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_130129_1b1a59_prd.md",
+    "skill_path": "/home/ubuntu/steve/auto-skill-creator/skills_workflow/_data/skills/generated/token-resilience-weekly-report/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260403_130129_1b1a59_audience_result.json",
+    "report_path": "data/audience/prd_20260403_130129_1b1a59_user-persona-report.md",
+    "analysis_date": "2026-04-03",
+    "social_data_available": false,
+    "social_data_note": "ant_market_sentiment MCP tool not available in current environment; social validation skipped"
+  }
+}

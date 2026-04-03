@@ -1,0 +1,29 @@
+{
+  "skill_id": "token-resilience-weekly-report",
+  "skill_name": "代币韧性周报分析",
+  "source_prd": "data/prd/prd_20260403_130129_1b1a59_prd.md",
+  "job_id": "prd_20260403_130129_1b1a59",
+  "created_at": "2026-04-03",
+  "strategy_intent": {
+    "opportunity_type": "weekly_resilience_report",
+    "core_method": "dual_direction_beta_asymmetry",
+    "formula": "resilience_score = upside_alpha + downside_alpha",
+    "tiers": ["T1", "T2", "weak", "neutral"],
+    "primary_data_source": "ant_spot_market_structure (coins_markets + sparkline_7d)",
+    "secondary_data_sources": ["ant_meme (search_pairs)", "ant_market_sentiment (coin_detail, optional)"]
+  },
+  "implementation_notes": {
+    "sparkline_limitation": "sparkline 为小时级近似，与 CoinGecko 标准日收盘价存在 1-3% 误差，已在输出中注明",
+    "batch_api_calls": "基准和目标代币合并为一次 API 调用以减少请求次数",
+    "unknown_ticker_fallback": "未知 ticker 通过 ant_meme search_pairs 二次查询 CoinGecko ID",
+    "narrative_optional": "叙事催化剂识别为可选功能（include_narrative=true），使用 ant_market_sentiment"
+  },
+  "files_generated": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json",
+    "scripts/compute_resilience.py",
+    "references/mcp-data-mapping.md"
+  ],
+  "validation_status": "passed"
+}
