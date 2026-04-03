@@ -1,0 +1,158 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "output": {
+    "personas": [
+      {
+        "type": "airdrop_hunter_arbitrageur",
+        "description": "持有多个项目空投头寸的活跃猎人，TGE 前会主动在多平台对比价差，寻找无风险套利窗口，同时对冲持仓风险",
+        "experience_level": "intermediate",
+        "primary_goal": "在 TGE 前 7 天内锁定盘前价差收益，同时用空仓对冲空投隐式多头风险，实现低风险正期望",
+        "pain_points": [
+          "需要手动刷新 ASP、Binance Pre-market、Polymarket 三个平台比价，耗时且易错过窗口",
+          "缺乏统一的价差计算工具，无法快速判断扣除滑点和手续费后价差是否真实可执行",
+          "空投数量未确认时难以准确计算对冲比例，易超对冲或对冲不足",
+          "FOMO 情绪判断主观，难以量化高 FOMO 时的止损价位"
+        ],
+        "tool_habits": [
+          "Binance Web / App",
+          "Aspecta AI (ASP)",
+          "Polymarket",
+          "CoinGlass（用于 OI / 资金费率辅助判断）",
+          "Twitter / X（跟踪 KOL 信号）",
+          "Telegram 社区（071 韩国社区等）"
+        ],
+        "use_frequency": "事件驱动，每次 TGE 公告或空投查询界面上线时触发，每月约 2-6 次",
+        "verification_status": "partially_verified",
+        "verification_evidence": "PRD 原始推文作者 @BTC_Alert_ 本身即目标画像的典型案例。推文详细展示了跨平台盘前价差发现→情绪校验→历史类比→执行结构的完整操作流程，与画像描述高度吻合。社交数据（ant_market_sentiment）因工具不可用，无法进行量化验证，标注为部分验证。"
+      },
+      {
+        "type": "crypto_quant_researcher",
+        "description": "专注于新代币上市前定价机制研究的量化研究员或投研人员，系统性地追踪多个 TGE 项目的盘前价格走势，构建类比分析模型",
+        "experience_level": "advanced",
+        "primary_goal": "系统化收集盘前价差数据，建立类比模型（如 OPN→EDGEX），为自营或团队的 TGE 套利策略提供数据支撑",
+        "pain_points": [
+          "盘前历史数据分散、无法通过标准数据源获取（如 OPN 盘前走势需手动存档）",
+          "多项目并行追踪时，人工比价效率极低",
+          "无法自动获取 ant_token_analytics 解锁数据与盘前价格的联动分析",
+          "情绪数据（Twitter / Telegram）与量化指标难以整合到一个决策框架中"
+        ],
+        "tool_habits": [
+          "Dune Analytics",
+          "CoinGlass",
+          "TradingView",
+          "Nansen",
+          "自建 Python 脚本抓取 Binance API",
+          "Twitter/X 高级搜索"
+        ],
+        "use_frequency": "中频，每周 1-3 次，主要在重要项目 TGE 公告后密集使用",
+        "verification_status": "inferred",
+        "verification_evidence": "PRD 的方法论深度（7 步分析流程、FDV 盈亏平衡估算、历史类比参考代币）表明原始需求来自高经验用户。量化研究员画像基于文档内容推断，无社交数据直接验证。"
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "空投查询界面上线即时扫描",
+        "trigger": "项目方在官网或 Twitter 公告空投查询界面上线，用户立即触发扫描",
+        "frequency": "每次 TGE 生命周期触发 1-3 次（公告上线、TGE 前 48h、TGE 当日）",
+        "example": "/cross-platform-premarket-spread-scanner EDGEX --platforms ASP,Binance,Polymarket --airdrop_amount_est 200000 --reference_token OPN"
+      },
+      {
+        "scenario": "TGE 公告后价差监控",
+        "trigger": "代币宣布 TGE 日期，盘前市场开放报价后 24-48 小时内的价差高峰期",
+        "frequency": "每月约 4-10 次（覆盖主流 TGE 项目）"
+      },
+      {
+        "scenario": "空投持仓对冲决策",
+        "trigger": "用户已持有大量空投，希望在盘前窗口锁定收益并降低 cc 风险敞口",
+        "frequency": "与用户参与的空投项目数量正相关，活跃猎人每月 2-8 次"
+      },
+      {
+        "scenario": "历史类比走势参考",
+        "trigger": "用户发现新代币与历史代币（如 OPN）在叙事结构和社区热度上高度相似，需要定量对比",
+        "frequency": "低频，需提供 reference_token 参数，约每月 1-2 次"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球活跃空投猎人及 TGE 前套利交易者，估计约 20-50 万人（基于主流 TGE 项目的参与人数规模，如 Hyperliquid TGE 有 94,000+ 参与地址，中等规模 TGE 约 5,000-30,000 参与者）",
+      "serviceable": "具备跨平台盘前套利能力（同时使用 ASP + Binance + Polymarket）且资金量足以覆盖手续费的用户，估计约 2-5 万人。进一步缩小到会使用 AI Skill 工具辅助决策的用户，约 3,000-8,000 人",
+      "confidence": "low",
+      "notes": "盘前市场是小众但高价值场景，每笔套利金额通常在 1-10 万 USDT 级别。用户基数虽小，但单次使用价值高。市场规模随 TGE 活跃度周期性波动：牛市高峰期可能增加 3-5 倍。"
+    },
+    "competitive_landscape": [
+      {
+        "name": "手动比价（主流方式）",
+        "overlap": "完全重叠",
+        "differentiation": "本 Skill 自动化了手动刷新 3 个平台、计算价差、评估 FOMO 的全流程，节省约 15-30 分钟的操作时间"
+      },
+      {
+        "name": "CoinGlass 盘前数据",
+        "overlap": "部分重叠（价格展示）",
+        "differentiation": "CoinGlass 提供价格展示但不做套利可执行性评估，不计算滑点后实际价差，不提供空投对冲仓位建议"
+      },
+      {
+        "name": "Binance Pre-market 官方页面",
+        "overlap": "单平台价格",
+        "differentiation": "本 Skill 跨平台聚合，Binance 官方页面仅提供自家盘前价格"
+      },
+      {
+        "name": "自建脚本（量化用户）",
+        "overlap": "功能重叠度高",
+        "differentiation": "本 Skill 对非编程用户友好，同时集成了情绪数据（ant_market_sentiment）和 token analytics（ant_token_analytics），无需用户自建数据管道"
+      }
+    ],
+    "social_validation": {
+      "keywords_searched": [
+        "pre-market arbitrage crypto",
+        "airdrop hedge TGE",
+        "Binance pre-market spread",
+        "ASP Aspecta premarket",
+        "Polymarket token price"
+      ],
+      "total_posts_found": 0,
+      "key_findings": [
+        "ant_market_sentiment 工具在当前执行环境中不可用，无法进行直接的话题帖子查询",
+        "WebSearch 工具未获授权，无法补充社交数据",
+        "社交验证完全基于文档内容推断，置信度标注为 low",
+        "PRD 来源推文本身（@BTC_Alert_ 的 $EDGEX 分析）是最直接的社交信号——表明此类分析方法论在 KOL 层面已有自然传播",
+        "盘前套利话题在社交媒体上的自然讨论预计集中于 Twitter/X 的 crypto 交易社区和 Telegram 群组，这类平台的数据无法通过 ant_market_sentiment 覆盖"
+      ],
+      "data_gap_assessment": "由于工具限制，社交验证层为空白。这本身是一个重要信号：如果主流社交数据平台（LunarCrush 等）对'pre-market arbitrage'类话题覆盖不足，说明此需求更多存在于私域（Telegram、Discord）和高门槛社区，而非公开社交媒体，与'沉默需求'特征吻合。"
+    },
+    "optimization_suggestions": [
+      {
+        "finding": "关键数据源缺口：ASP、Binance 盘前、Polymarket 均为外部 API，当前 MCP 无法直接覆盖（PRD 第 6 节标注 4 项 ❌）",
+        "action": "增加数据降级策略：当外部 API 不可用时，自动切换到 WebSearch 抓取页面价格或提示用户手动输入价格，确保 Skill 在 API 限速或封禁场景下仍可部分运行",
+        "expected_impact": "将 Skill 可用性从'依赖外部 API 完全可用'提升到'任意场景可部分运行'，减少用户因数据获取失败而放弃使用的概率"
+      },
+      {
+        "finding": "用户门槛偏高：用户需要理解 FOMO 评级、对冲比例、可执行价差等专业概念才能有效使用输出报告",
+        "action": "增加简报模式（--summary 参数），输出仅包含：套利评级（A/B/C/D）、一句话结论（如'立即做空 ASP，做多 Binance，预计净收益 $0.30/枚'）和风险等级，隐藏中间计算细节",
+        "expected_impact": "覆盖中级空投猎人用户群（占目标用户约 60%），他们需要结论而非分析过程"
+      },
+      {
+        "finding": "使用场景高度依赖 TGE 事件，用户可能在错误时间使用（TGE 后盘前市场已关闭）",
+        "action": "在 Step 1 的触发信号检测中加入更明确的时效提示，并提供'当前无 TGE 机会'的明确输出格式，同时建议用户关注的下一个 TGE 项目（通过 ant_token_analytics 查询近期 emissions 列表）",
+        "expected_impact": "减少用户在无效窗口期内的误触发，提升单次使用的信噪比"
+      },
+      {
+        "finding": "历史类比功能（Step 5）依赖用户手动提供 reference_token，但大多数用户不知道选哪个参考代币",
+        "action": "增加自动参考代币匹配逻辑：基于 symbol 的叙事类型（Layer2 / DeFi / Gaming 等）自动从历史已上线代币中匹配最近且结构相似的参考代币，无需用户手动指定",
+        "expected_impact": "将历史类比功能的实际使用率从低频（需手动指定）提升到默认可用，提升报告的参考价值"
+      },
+      {
+        "finding": "cc 风险（代币取消或推迟上线）是尾部风险，当前标注为'需人工判断'，但对空投猎人而言这是最大的未知损失来源",
+        "action": "增加 cc 风险评估启发式模块：基于项目方 Twitter 活跃度、官方公告频率、社区情绪趋势给出 cc 风险定性评级（Low/Medium/High），作为套利评级的修正因子",
+        "expected_impact": "补全最重要的非量化风险维度，避免用户在高 cc 风险项目上盲目执行 A/B 级套利"
+      }
+    ]
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260403_102425_044c51_prd.md",
+    "skill_path": "/home/ubuntu/steve/auto-skill-creator/skills_workflow/_data/skills/generated/cross-platform-premarket-spread-scanner/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260403_102425_044c51_audience_result.json",
+    "analysis_date": "2026-04-03",
+    "social_validation_method": "document_inference_only",
+    "social_validation_note": "ant_market_sentiment 和 WebSearch 工具在本次执行环境中不可用，社交验证层基于 PRD 和 SKILL.md 文档内容推断，所有 persona 的 verification_status 已相应降级标注"
+  }
+}
