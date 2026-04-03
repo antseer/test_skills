@@ -1,0 +1,37 @@
+{
+  "skill_id": "oi-divergence-monitor",
+  "skill_name": "OI 背离信号监测",
+  "source": {
+    "type": "prd",
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/e2e_test_001_prd.md",
+    "job_id": "e2e_test_001",
+    "methodology_author": "@EmberCN"
+  },
+  "generated_files": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json"
+  ],
+  "mcp_dependencies": [
+    {
+      "tool": "ant_spot_market_structure",
+      "query_types": ["simple_price"],
+      "purpose": "获取现货价格及涨跌幅"
+    },
+    {
+      "tool": "ant_futures_market_structure",
+      "query_types": ["futures_oi_aggregated", "futures_funding_rate_latest", "futures_funding_rate_history", "futures_long_short_ratio", "futures_long_short_history"],
+      "purpose": "获取合约 OI、资金费率、多空比数据"
+    },
+    {
+      "tool": "ant_futures_liquidation",
+      "query_types": ["futures_liquidation_aggregated", "futures_liquidation_history"],
+      "purpose": "获取多空爆仓数据"
+    }
+  ],
+  "validation": {
+    "passed": true,
+    "validator": "quick_validate.py"
+  },
+  "created_at": "2026-04-03T00:00:00Z"
+}
