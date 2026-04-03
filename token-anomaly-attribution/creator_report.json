@@ -1,0 +1,38 @@
+{
+  "skill_id": "token-anomaly-attribution",
+  "skill_name": "代币异动归因框架分析",
+  "source_prd": "prd_20260403_092645_68c14e_prd.md",
+  "methodology_attribution": "@Guolier8",
+  "created_at": "2026-04-03T00:00:00Z",
+  "analysis_steps": 9,
+  "mcp_tools_used": [
+    "ant_spot_market_structure",
+    "ant_fund_flow",
+    "ant_token_analytics",
+    "ant_smart_money",
+    "ant_futures_market_structure",
+    "ant_market_indicators",
+    "ant_market_sentiment",
+    "ant_etf_fund_flow"
+  ],
+  "coverage": {
+    "quantifiable_factors": 16,
+    "semi_quantifiable": 1,
+    "unverifiable_requires_human": 5
+  },
+  "input_params": [
+    {"name": "symbol", "required": true},
+    {"name": "direction", "required": false, "default": "auto"},
+    {"name": "time_range", "required": false, "default": "7d"},
+    {"name": "chain", "required": false, "default": "auto"},
+    {"name": "token_address", "required": false, "default": null},
+    {"name": "threshold_pct", "required": false, "default": 10.0}
+  ],
+  "files_created": [
+    "SKILL.md",
+    "README.md",
+    "token_anomaly_attribution.py",
+    "creator_report.json"
+  ],
+  "validation_status": "passed"
+}
