@@ -1,0 +1,58 @@
+{
+  "skill_id": "btc-weekly-market-analysis",
+  "skill_name": "BTC 周度综合市场分析",
+  "source_prd": "data/prd/prd_20260403_100345_28276d_prd.md",
+  "source_tweet": "https://x.com/Guolier8/status/2039989943213404528",
+  "source_author": "@Guolier8",
+  "created_at": "2026-04-03",
+  "methodology": "宏观 → 机构资金 → 市场结构 → 链上 → 价格判断 五层递进分析框架",
+  "mcp_tools_used": [
+    "ant_macro_economics",
+    "ant_etf_fund_flow",
+    "ant_futures_market_structure",
+    "ant_futures_liquidation",
+    "ant_fund_flow",
+    "ant_stablecoin",
+    "ant_spot_market_structure",
+    "ant_market_sentiment",
+    "ant_token_analytics",
+    "ant_precious_metal_tokens"
+  ],
+  "mcp_coverage": {
+    "fully_covered": 11,
+    "approximate": 4,
+    "not_covered": 3,
+    "not_covered_items": [
+      "期权 put/call 偏斜（建议 Laevitas / Deribit API）",
+      "Brent 原油价格（建议 EIA API / Alpha Vantage）",
+      "BTC-S&P 滚动相关性（建议 Yahoo Finance API）"
+    ]
+  },
+  "analysis_steps": [
+    "Step 1: 宏观流动性环境评估（Fed利率 + CPI）",
+    "Step 2: 地缘政治与外生风险评估（黄金联动）",
+    "Step 3: ETF 资金流向分析（BTC ETF + ETH ETF）",
+    "Step 4: 衍生品市场结构诊断（资金费率 + OI + 多空比 + 爆仓）",
+    "Step 5: 链上资金结构分析（交易所存量 + 鲸鱼持仓 + 稳定币 + MVRV）",
+    "Step 6: 价格结构与关键位分析（支撑/压力位 + 技术指标）",
+    "Step 7: 综合研判与情景推演（短期/中期判断 + 三情景路径）"
+  ],
+  "parameters": {
+    "symbol": "BTC",
+    "start_date": "可选，默认上周一",
+    "end_date": "可选，默认上周日",
+    "include_eth_etf": "boolean，默认 true",
+    "whale_threshold": "integer，默认 1000",
+    "whale_lookback_days": "integer，默认 14",
+    "fear_greed_threshold": "integer，默认 20"
+  },
+  "output_format": "结构化 Markdown 周报（表格 + 文字总结 + 情景路径）",
+  "files_generated": [
+    "SKILL.md",
+    "README.md",
+    "creator_report.json",
+    "scripts/btc_weekly_analysis.py"
+  ],
+  "validation_passed": true,
+  "notes": "鲸鱼净增减持和盈利供应率为估算值；期权数据需外部 API 补充。分析框架和概率估算基于历史规律，不构成投资建议。"
+}
