@@ -1,0 +1,224 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "skill_id": "crash-premeditation-signal-detector",
+  "output": {
+    "personas": [
+      {
+        "id": "persona_1",
+        "type": "active_futures_trader",
+        "name": "主动合约交易员",
+        "role": "在 Binance/OKX/Bybit 等主流 CEX 上活跃参与 BTC/ETH 主流合约交易的个人交易者",
+        "description": "持仓周期以小时到数天为主，具备一定的主力操盘识别意识，日常通过 CoinGlass 观察 OI 和资金费率，熟悉「价格涨 + OI 跌」的背离现象，但缺乏系统化、自动化的多维度信号整合工具",
+        "experience_level": "intermediate_to_advanced",
+        "capital_range": "10,000 - 500,000 USD",
+        "primary_goal": "在主力高位平多布空的早期阶段识别崩盘预谋信号，提前规避多单风险或建立空头对冲",
+        "use_case": "价格在高位出现异常拉升或横盘时手动触发 Skill，在 5 分钟内获得 OI 背离 + 资金费率 + Smart Money 的综合评分，决定是否降低多单敞口或建立空头",
+        "pain_points": [
+          "需要同时盯多个平台（CoinGlass 看 OI、交易所看资金费率、链上工具看鲸鱼），信息极度分散",
+          "1H 级别 OI 背离需手动对比价格走势，没有自动化预警和评分机制",
+          "主力操盘信号往往发现时已滞后，错过最佳规避时机",
+          "无法快速量化三阶段模型（平多→托价→布空）的信号强度，只能靠经验判断",
+          "散户被主力收割是间接伤害，需要识别「正在被托价吸引进场」的状态"
+        ],
+        "tool_habits": ["CoinGlass", "TradingView", "Binance 合约界面", "Coinglass OI 热力图", "Telegram 信号群"],
+        "use_frequency": "每日 2-5 次（高频，随行情节奏触发），顶部震荡行情期间更高频",
+        "decision_type": "交易决策（直接影响开平仓操作）",
+        "knowledge_threshold": "理解 OI 背离、资金费率、多空比基本概念，有合约交易经验，但不需要深度量化背景",
+        "verification_status": "partially_verified",
+        "verification_evidence": "PRD 原始推文作者 @wuk_Bitcoin 本身即为此类交易员，其推文描述的三阶段模型（平多→托价→布空）以 1H OI + 价格数据为核心，说明此方法论在合约交易者圈子中有自然流通。Skill 的 Entry Conditions 明确列出「事件驱动：价格在 1-4 小时内异常拉升」，与此类用户的使用场景高度匹配。ant_market_sentiment 工具在当前环境不可用，无法补充社交数据量化验证。",
+        "confidence": "high"
+      },
+      {
+        "id": "persona_2",
+        "type": "quant_researcher_risk_manager",
+        "name": "量化研究员 / 机构风控分析员",
+        "role": "在量化基金、做市商团队或机构交易台负责合约市场结构分析和风险监控的专业人员",
+        "description": "具备深度量化背景，使用程序化工具监控多维度市场信号，需要将 OI 背离等主力操盘信号模块化、系统化地接入自动化风控流水线。PRD 明确指出机构「电子盘（算法做市商）」是主力收割的主要目标，使该人群对此类 Skill 有强内在需求。",
+        "experience_level": "advanced_to_professional",
+        "capital_range": "机构资金，AUM 通常 > 500,000 USD",
+        "primary_goal": "将崩盘预谋信号识别模块化，接入自动化风控系统，在高危信号出现时自动降低多单敞口或暂停多方向算法策略",
+        "use_case": "定时任务（每 1 小时）自动对 BTC/ETH 主流合约运行 Skill，当信号评级升至 Moderate 或 Strong 时触发 Telegram 告警并执行预设风控规则；崩盘事件后用于回溯验证模型参数",
+        "pain_points": [
+          "现有风控系统缺乏「主力操盘行为」维度的量化信号，只能靠价格止损",
+          "OI 背离 + 资金费率 + Smart Money 多维度数据整合成本高，需要大量工程资源",
+          "机构算法策略是主力收割目标（推文明确指出），缺少识别自身是否在被诱导建立多仓的工具",
+          "定期巡检（1-4 小时）需要完全自动化，人工盯盘不可行",
+          "模型参数（OI 下降阈值、lookback_hours）需要历史数据回测支撑，单次分析不够"
+        ],
+        "tool_habits": ["CoinGlass API", "Dune Analytics", "自研数据平台", "Python/Jupyter", "TradingView 策略回测", "Glassnode"],
+        "use_frequency": "每 1-4 小时自动巡检（全天候），或重大行情异动时手动触发",
+        "decision_type": "风控决策（仓位调整、算法策略暂停、止损触发）",
+        "knowledge_threshold": "深度理解 OI、资金费率、多空比、Smart Money 概念，具备数据工程能力，可解读 JSON 输出并接入自动化流程",
+        "verification_status": "partially_verified",
+        "verification_evidence": "PRD「目标用户」中明确列出「量化研究员、风控人员」。SKILL.md 的 Entry Conditions 包含「定时巡检场景：每小时对主流币对运行」，输出结构化报告（含 score、各维度 bool/enum 字段）设计显然面向程序化消费。PRD 特别指出机构电子盘是主力收割对象，为此类用户提供了强动机。",
+        "confidence": "high"
+      },
+      {
+        "id": "persona_3",
+        "type": "crypto_kol_analyst",
+        "name": "加密 KOL / 合约分析内容创作者",
+        "role": "在 Twitter/X、Telegram 发布合约市场分析内容的意见领袖或内容创作者",
+        "description": "需要快速生成有数据支撑的分析报告，「崩盘预谋三阶段模型」本身具有极强的叙事吸引力和传播性。原始推文 @wuk_Bitcoin 就是此类内容的典型案例，说明这类创作者既是 Skill 的潜在用户，也是 Skill 触发词和方法论的来源。",
+        "experience_level": "intermediate_to_advanced",
+        "capital_range": "个人交易 5,000 - 100,000 USD，主要收益来自内容变现",
+        "primary_goal": "快速产出有量化证据支撑的崩盘预警分析内容，抢占热点时间窗口，增强内容可信度",
+        "use_case": "在行情出现高位异动时触发 Skill，将输出的信号评级（Strong/Moderate）和关键数据（OI 跌幅 -8.7%、Smart Money 净空、爆仓墙 $420M）直接转化为 Twitter 分析帖子的数据支撑",
+        "pain_points": [
+          "手动整理 OI + 价格 + 资金费率数据耗时，影响内容发布速度（时效性强）",
+          "需要量化证据支撑「主力在操盘」的判断，否则内容只是主观猜测",
+          "粉丝需要可操作的信号，纯理论分析传播效果差",
+          "行情异动时间窗口短，手动分析可能错过最佳发布时机"
+        ],
+        "tool_habits": ["Twitter/X", "CoinGlass 截图", "TradingView 截图", "Telegram 频道", "Coinglass 爆仓热力图"],
+        "use_frequency": "每周 1-3 次（配合内容发布节奏，高度事件驱动）",
+        "decision_type": "研究分析 / 信息获取（内容创作数据支撑）",
+        "knowledge_threshold": "理解核心概念即可，Skill 输出已高度结构化，关键数字和结论可直接引用",
+        "verification_status": "inferred",
+        "verification_evidence": "PRD 原始推文 @wuk_Bitcoin 本身就是此类内容的典型案例（图文描述三阶段模型，具备强传播性）。此类用户是 Skill 方法论的天然传播渠道，但非核心设计目标。无社交数据直接验证此群体的规模。",
+        "confidence": "medium"
+      }
+    ],
+    "use_cases": [
+      {
+        "id": "use_case_1",
+        "scenario": "BTC/ETH 高位异常拉升即时检测",
+        "description": "BTC 在高位出现 1-4 小时内的快速拉升，交易员怀疑是主力托价，手动触发 Skill 检查 OI 是否出现背离（价格涨 + OI 跌），5 分钟内获得综合信号评级",
+        "trigger": "价格在短时间内异常拉升，视觉上与正常牛市拉升不同（价格稳定上涨但量能不足）",
+        "primary_persona": "persona_1",
+        "frequency": "每周 3-7 次（震荡顶部行情期间更高频）",
+        "value_delivered": "将需要查阅 3-4 个平台、耗时 30-60 分钟的手动分析压缩至 5 分钟，提供有评分的结构化结论",
+        "expected_action": "降低多单仓位、设置止损、建立小额空头对冲"
+      },
+      {
+        "id": "use_case_2",
+        "scenario": "自动化定期市场巡检",
+        "description": "量化团队将 Skill 接入 cron 调度系统，每 1 小时自动对 BTC、ETH 主流合约运行，当信号等级升至 Moderate 或 Strong 时通过 Telegram 机器人推送告警",
+        "trigger": "定时任务（每 1 小时）自动触发",
+        "primary_persona": "persona_2",
+        "frequency": "每 1-4 小时，全天候自动运行",
+        "value_delivered": "无需人工盯盘，确保关键信号不被遗漏；Strong 信号自动触发风控规则",
+        "expected_action": "触发风控规则：降低组合多头敞口，暂停多方向算法策略"
+      },
+      {
+        "id": "use_case_3",
+        "scenario": "布空期末端确认：三阶段模型第二步核实",
+        "description": "OI 背离已持续 3+ 根 1H K 线，交易员确认已进入「主力托价 + 吸引散户做多」阶段，用 Skill 核查 Smart Money 净空仓 + 资金费率正向拥挤的组合是否就位，判断是否已进入布空期末端",
+        "trigger": "OI 背离信号已持续 3 小时以上，准备进入空单布局决策",
+        "primary_persona": "persona_1",
+        "frequency": "每月 4-10 次（顶部行情集中）",
+        "value_delivered": "将「布局期末端」的模糊主观判断转化为可评分的客观信号（尤其是 Smart Money + 爆仓墙组合）",
+        "expected_action": "布局空单，设置进场价和止损位"
+      },
+      {
+        "id": "use_case_4",
+        "scenario": "崩盘前兆内容创作支撑",
+        "description": "KOL 在行情异动时触发 Skill，将输出的 Strong 信号评级和关键数据（OI 跌幅百分比、Smart Money 方向、爆仓墙规模）作为 Twitter/Telegram 预警帖子的数据支撑",
+        "trigger": "信号评级达到 Moderate 或 Strong，具备内容传播价值",
+        "primary_persona": "persona_3",
+        "frequency": "每月 1-4 次（高质量预警内容优先）",
+        "value_delivered": "将耗时 1 小时的手动数据整理压缩到 5 分钟，抢先发布有数据支撑的预警分析",
+        "expected_action": "发布 Twitter/Telegram 预警内容，附带 Skill 输出的关键数据截图"
+      },
+      {
+        "id": "use_case_5",
+        "scenario": "崩盘事件后复盘与模型参数优化",
+        "description": "重大崩盘事件发生后，量化研究员回溯用 Skill 分析崩盘前 6-12 小时的信号强度，验证三阶段模型的有效性，调整 oi_decline_threshold_pct 和 lookback_hours 参数",
+        "trigger": "市场发生重大下跌事件（>5% 单日跌幅，伴随大规模爆仓）",
+        "primary_persona": "persona_2",
+        "frequency": "每月 1-3 次（重大事件驱动）",
+        "value_delivered": "结构化的历史信号数据，支持模型回测和参数迭代，提升 Skill 的精确度",
+        "expected_action": "更新风控模型参数，优化自动触发阈值"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球活跃合约交易者约 200-500 万人（基于 Binance/OKX/Bybit 合约活跃账户估算）。其中关注 OI 分析和主力操盘识别的进阶用户约占 10-20%，即 20-100 万人。",
+      "serviceable": "能够理解 OI 背离 + Smart Money 多维度信号并有动机使用此 Skill 的中高级交易者，估计 5-20 万人。其中有能力将 Skill 接入自动化系统的量化研究员和机构风控人员约 1-3 万人。",
+      "immediate_target": "当前可直接触达的核心用户：活跃于 CoinGlass、合约分析社群、量化研究圈子的专业用户，约 5,000-15,000 人",
+      "confidence": "medium",
+      "rationale": "合约市场用户规模有交易所公开数据支撑，但「主力操盘信号识别」这一细分需求的受众规模无直接公开数据。CoinGlass 月活约 200 万可作为类似工具的上限参考，本 Skill 覆盖更专业子集（需理解三阶段崩盘模型 + 多维度信号整合），保守估计可服务用户 5 万以内。推文的自然传播（@wuk_Bitcoin 描述的模型方法论）证明该细分领域存在真实的知识需求。"
+    },
+    "competitive_landscape": [
+      {
+        "name": "CoinGlass OI 监控与爆仓热力图",
+        "overlap": "高度重叠（OI 历史数据、资金费率、爆仓热力图可视化均有提供）",
+        "differentiation": "本 Skill 提供自动化多维度信号聚合与评分（7 个维度 → 1 个评级），CoinGlass 提供原始数据可视化，用户仍需手动整合和判断"
+      },
+      {
+        "name": "Hyblock Capital",
+        "overlap": "中度重叠（爆仓热力图、机构流向分析）",
+        "differentiation": "本 Skill 聚焦「三阶段崩盘预谋模型」的特定信号识别，Hyblock 覆盖更广泛的合约分析场景"
+      },
+      {
+        "name": "Twitter/X KOL 手动分析（如 @wuk_Bitcoin）",
+        "overlap": "概念层面完全重叠（方法论来源相同）",
+        "differentiation": "本 Skill 提供实时、可量化、可复现的自动化信号，KOL 分析有时滞且带有主观性，无法按需触发"
+      },
+      {
+        "name": "Nansen Smart Money 监控",
+        "overlap": "部分重叠（Smart Money 仓位方向）",
+        "differentiation": "Nansen 以链上钱包标签为主，本 Skill 整合 CEX 合约数据（Binance OI、资金费率）与链上永续合约（GMX、dYdX）的组合视角，覆盖 CeFi 侧大户行为"
+      },
+      {
+        "name": "Coinalyze / Velo Data OI 看板",
+        "overlap": "中度重叠（多交易所聚合 OI 追踪）",
+        "differentiation": "本 Skill 提供基于三阶段模型的评分框架而非原始 OI 图表，降低了用户从数据到结论的解读成本"
+      }
+    ],
+    "social_validation": {
+      "keywords_searched": ["open interest divergence", "OI divergence crash", "whale short setup", "funding rate crowded long", "pre-crash signal futures"],
+      "total_posts_found": 0,
+      "search_status": "tool_unavailable",
+      "key_findings": [
+        "ant_market_sentiment MCP 工具在当前运行环境中不可用（未配置对应 MCP server），社交数据验证无法执行",
+        "所有画像验证基于 PRD 文档分析、SKILL.md 设计逻辑和行业知识推导",
+        "PRD 原始推文 @wuk_Bitcoin 的内容本身即为社交讨论存在的直接证据：描述三阶段模型（平多→托价→布空）的推文具有高传播性，表明合约交易者圈子对此类信号有自然讨论需求",
+        "OI 背离、资金费率多头拥挤、Smart Money 净空等话题在 Twitter/X 合约分析圈属于中高频讨论主题（基于行业知识判断），但具体帖子量和讨论者画像数据缺失",
+        "「主力砸盘预警」类内容在中文合约交易社群（微信群、Telegram 频道）通常有高互动，但此类平台上的讨论无法通过 ant_market_sentiment 搜索覆盖"
+      ],
+      "note": "由于 ant_market_sentiment 工具不可用，本报告社交验证部分以文档分析和行业知识作为替代依据。建议在工具可用时补充搜索关键词 'OI divergence'、'open interest' 和 'crash signal'，以量化讨论热度和讨论者类型分布。"
+    },
+    "optimization_suggestions": [
+      {
+        "id": "opt_1",
+        "finding": "知识门槛：有效使用 Skill 需要理解 OI 背离、Smart Money、爆仓热力图等多个专业概念，门槛较高，限制了中级交易者的可用性",
+        "action": "增加「简报模式」（brief_mode=true）：输出仅包含信号评级（Strong/Moderate/Weak/No Signal）+ 一句话结论 + 最关键触发信号（如「OI 连续下降 6 小时，Smart Money 净空，建议谨慎多单」），高级用户切换到详细模式查看全部 7 维度数据",
+        "expected_impact": "将可用用户群从「完全理解多维度技术概念的进阶用户」扩展到「只需看预警等级做决策的普通合约用户」，预计覆盖用户扩大 2-3 倍"
+      },
+      {
+        "id": "opt_2",
+        "finding": "使用频率依赖主动触发：Skill 本质是事件驱动，但用户在无异动时不会主动使用，导致使用频率低、关键信号可能被遗漏",
+        "action": "增加「异动推送联动模式」：与监控类 Skill 联动，当 BTC/ETH 在 1H 内价格涨幅超过 1% 时自动触发本 Skill 检查，将被动查询转为主动推送。输出 Telegram/通知格式的告警摘要",
+        "expected_impact": "将核心使用场景从「用户主动查询」升级为「系统自动预警」，确保关键布局信号不被遗漏，显著提升 persona_1 和 persona_2 的用户粘性"
+      },
+      {
+        "id": "opt_3",
+        "finding": "单币种限制：当前每次运行只能分析一个 symbol，量化研究员和风控人员需要扫描多个主流合约",
+        "action": "增加「批量扫描模式」（scan_symbols=[\"BTC\",\"ETH\",\"SOL\",\"BNB\"]）：并行分析多个合约，按信号等级排序输出简化表格（每行一个 symbol：评级 + 核心触发因素），仅在 Moderate/Strong 时展开详情",
+        "expected_impact": "直接满足风控人员的全市场扫描需求，将 Skill 从「单币种分析工具」升级为「多合约预警中心」，大幅提升 persona_2 的实用价值"
+      },
+      {
+        "id": "opt_4",
+        "finding": "订单簿数据缺失：推文核心机制（主力通过 Maker 托单维持价格）在当前 Skill 中无法直接验证，依赖 Taker 流方向间接推断，削弱了洗盘期识别的精确性",
+        "action": "补充 Taker 流与 Maker 流的比率分析（Taker buy volume / total volume）：当 Taker 买入比例异常高但价格涨幅有限时，间接推断存在大量 Maker 卖单（或 Maker 买单托价场景的相反侧），在输出中增加「订单流异常」维度评分，并明确标注这是间接推断而非直接观测",
+        "expected_impact": "在不依赖 L2 订单簿数据的前提下提升托价期识别的可信度，减少因「缺少直接证据」导致的专业用户疑虑"
+      },
+      {
+        "id": "opt_5",
+        "finding": "语言定位限制：Skill 描述、触发词和输出均以中文为主，但 OI 背离 + 崩盘预谋话题在英文加密合约圈同样活跃（international futures traders）",
+        "action": "增加英文输出模式（lang=en 参数）：将报告模板切换为英文版，英文触发词（crash signal、OI divergence、pre-crash detection）已在 SKILL.md 中定义，可直接激活",
+        "expected_impact": "将可服务用户从中文合约交易者（约 100-200 万）扩展至全球英文市场（数倍于中文市场），显著增大总可服务市场（SAM）"
+      }
+    ]
+  },
+  "metadata": {
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260404_095922_a5c8d9_prd.md",
+    "skill_path": "/home/ubuntu/steve/auto-skill-creator/skills_workflow/_data/skills/generated/crash-premeditation-signal-detector/SKILL.md",
+    "output_path": "skills_workflow/_data/tasks/prd_20260404_095922_a5c8d9_audience_result.json",
+    "report_path": "data/audience/prd_20260404_095922_a5c8d9_user-persona-report.md",
+    "job_id": "prd_20260404_095922_a5c8d9",
+    "analysis_date": "2026-04-04",
+    "social_validation_executed": false,
+    "social_validation_reason": "ant_market_sentiment MCP server not available in current environment"
+  }
+}
