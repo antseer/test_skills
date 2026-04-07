@@ -51,70 +51,38 @@ The tool runs a complete pipeline: market scan → manipulation detection → OI
 ## Sample Output
 
 ```
-## Whale-Manipulated Coin OI Divergence Short Sniper Report
+## Output Format
 
-Scan Time: 2026-04-06 14:30 UTC
-Data Source: Binance (only)
-Filter Results: 247 coins → 3 with 24H >50% → 2 confirmed futures-driven → 1 K-line pattern match → 1 OI divergence
+Strictly follow the format below. Output in two separate pushes. Do not add extra fields or modify the format.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+### Push 1: Candidate Screening
 
-### TL;DR
+When screening is complete, list all candidates that passed the filters:
 
-⚠️ Found 1 whale-manipulation short signal:
-1. **SIRENUSDT** (Strong divergence) — 24H +85%, Futures Vol Top 5, OI declining
+OI Divergence Screening Complete
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. {SYMBOL}
+24H Change: +{change}%
+Futures Volume Rank: #{rank}
+30D Avg Daily Volatility: {volatility}%
 
-### Signal #1: SIRENUSDT — Strong Divergence
+List each candidate in descending order by price change. If no candidates found, skip this push.
 
-#### Target Profile
-| Dimension | Data |
-|-----------|------|
-| 24H Gain | +85% |
-| Futures 24H Vol Rank | #3 |
-| Spot vs Futures Vol Ratio | 0.2:1 |
-| 30D Avg Daily Volatility | 3.1% |
-| Latest Daily Candle Gain | +62% |
+### Push 2: Short Signal
 
-#### OI Divergence Data
-| Metric | 8H Ago | Current | Change |
-|--------|--------|---------|--------|
-| Price | $0.0042 | $0.0078 | +85.7% |
-| OI | $18.2M | $14.1M | -22.5% |
-| Funding Rate | 0.015% | 0.028% | — |
+Only output for candidates that pass OI divergence verification. One entry per symbol:
 
-Divergence Strength: Strong
-30min Window Divergences: 6 consecutive windows
-5min Bar Divergences: 18 bars (quasi-continuous)
-OI Cumulative Drop: -22.5%
-Peak Boost: Yes (price at 8H high)
+OI Divergence Short Signal:
+- Contract: {SYMBOL}
+- Entry Range: ${low} - ${high}
+- Stop Loss: ${stop_loss}
+- Take Profit: ${take_profit}
+- Risk/Reward: {X}:1
+- Liquidation Price: > ${liq_price} (10x+ above entry, guard against market maker squeeze)
 
-#### Short Suggestion
+Note: {One paragraph highlighting key risks, including but not limited to: OI recovery trend, signal invalidation conditions, abnormal funding rate, etc.}
 
-- Contract: SIRENUSDT
-- Entry Zone: $0.0774 - $0.0782
-- Stop Loss: $0.0081 (1.5% above 8H high)
-- Take Profit 1: $0.0052 (24H low)
-- Take Profit 2: $0.0068 (divergence start price)
-- Risk/Reward: 3.2:1
-- Liquidation Price: > $0.078 (controlled at 10x+ entry)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-### Filtered Out Coins
-
-| Coin | 24H Gain | Eliminated At | Reason |
-|------|----------|---------------|--------|
-| ALPACAUSDT | +55% | Condition 2 | Futures vol not in Top 20 |
-| MOVEUSDT | +70% | Condition 3 | High 30D volatility, not a sudden pump |
-
-### Risk Warning
-
-- 5-minute level signals have short validity windows — act promptly
-- Whales may pump again before dumping — wait for confirmation
-- Liquidation at 10x+ entry is extreme risk control — keep position size minimal
-- For educational purposes only, not investment advice
+If no candidates pass OI divergence verification, do not output Push 2.
 ```
 
 ## When to Use / When Not to Use
