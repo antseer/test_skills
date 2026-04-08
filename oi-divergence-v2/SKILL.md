@@ -19,7 +19,7 @@ metadata:
     mcpServers:
       - name: antseer
         description: "Antseer on-chain data MCP — provides Binance futures and spot market data"
-author: mike
+author: antseer
 license: MIT
 ---
 
