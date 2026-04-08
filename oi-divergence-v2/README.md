@@ -19,16 +19,16 @@ When a small-cap coin suddenly pumps 50%+ in a day, you want to know: is this re
 How it works:
 
 1. **Scans Binance futures** for coins that pumped 50%+ in 24 hours
-2. **Cross-validates manipulation** using 3 conditions: huge price spike + top-20 futures volume + sudden K-line breakout after weeks of silence
+2. **Cross-validates manipulation** using 3 conditions (pass 2 of 3): huge price spike + top-50 futures volume + sudden K-line breakout after weeks of silence
 3. **Detects OI divergence** at 5-minute granularity — price holds up but open interest is dropping, meaning the whale is closing longs while keeping the price propped up
 4. **Generates short signals** with entry, stop-loss, take-profit levels and risk controls
 
 | Capability | Description |
 |------------|-------------|
 | Auto Target Discovery | Scans entire Binance futures market — no manual coin input needed |
-| 3-Condition Cross-Validation | 24H gain >50% + Futures Vol Top 20 + Sudden pump pattern |
+| 3-Condition Cross-Validation (2/3) | 24H gain >50% + Futures Vol Top 50 + Sudden pump pattern (pass 2 of 3) |
 | 5-Min OI Divergence | Dual-layer detection: 30min rolling window + bar-by-bar analysis |
-| Extreme Risk Control | Liquidation price set at 10x+ entry to survive whale counter-pumps |
+| Extreme Risk Control | Liquidation price = 10x entry price; first-wave signals warn 1/4 position + wide stop |
 
 ## Usage
 
@@ -65,6 +65,7 @@ OI Divergence Screening Complete
 24H Change: +{change}%
 Futures Volume Rank: #{rank}
 30D Avg Daily Volatility: {volatility}%
+Filter: {N}/3 passed (Cond1✓ Cond2✓/✗ Cond3✓/✗)
 
 List each candidate in descending order by price change. If no candidates found, skip this push.
 
@@ -78,7 +79,9 @@ OI Divergence Short Signal:
 - Stop Loss: ${stop_loss}
 - Take Profit: ${take_profit}
 - Risk/Reward: {X}:1
-- Liquidation Price: > ${liq_price} (10x+ above entry, guard against market maker squeeze)
+- Liquidation Price: > ${liq_price} (10x entry price, guard against market maker squeeze)
+
+⚠️ First-wave signal: this is the first divergence in the 8H window. Whale-manipulated coins may pump again — recommend 1/4 position + wide stop.
 
 Note: {One paragraph highlighting key risks, including but not limited to: OI recovery trend, signal invalidation conditions, abnormal funding rate, etc.}
 
