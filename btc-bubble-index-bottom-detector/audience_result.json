@@ -1,0 +1,169 @@
+{
+  "task_type": "audience_analysis",
+  "status": "completed",
+  "output": {
+    "personas": [
+      {
+        "type": "medium_long_term_btc_investor",
+        "description": "中长线 BTC 持仓者，持仓周期 3-24 个月，关注周期性底部窗口以优化建仓成本。具备基础链上认知，能理解 MVRV/NVT 概念但不一定会自行计算。",
+        "experience_level": "intermediate",
+        "primary_goal": "在市场大幅回调后量化确认底部区域，降低抄底的主观判断风险，找到性价比最高的建仓时机",
+        "pain_points": [
+          "底部判断过于主观，常依赖 KOL 推文或情绪，缺乏系统性框架",
+          "链上指标（MVRV、NVT）数据分散在多个平台（Glassnode、CryptoQuant），需要手动跨平台汇总",
+          "不清楚历史底部信号的统计可靠性，难以评估风险收益比",
+          "无法快速判断「当前是否类似 2022/2023 历史底部」"
+        ],
+        "tool_habits": ["CoinMarketCap", "TradingView", "Glassnode（免费版）", "Twitter/X KOL 推文", "CoinGecko"],
+        "capital_range": "1 万 - 100 万 USD，以散户和小型机构为主",
+        "use_frequency": "低频（事件驱动），市场大幅下跌 20%+ 时触发，每轮熊市约 2-4 次",
+        "decision_type": "交易决策 / 建仓时机判断",
+        "verification_status": "partially_verified",
+        "verification_evidence": "ant_market_sentiment MCP 工具在本次会话中权限未授权，无法直接验证社交数据。基于 PRD 来源推文作者 @monkeyjiang 的传播场景（加密 KOL 推文被中长线投资者广泛转发）以及 MVRV/NVT 底部讨论在 Glassnode 社区的常见模式，判断该画像为主要目标用户群，置信度：中。"
+      },
+      {
+        "type": "crypto_researcher_analyst",
+        "description": "加密研究员或投研人员，为机构投资组合或研究报告提供宏观周期分析支持，需要可引用的量化底部信号框架。",
+        "experience_level": "advanced",
+        "primary_goal": "构建系统性的 BTC 周期定位框架，将「泡沫指数底部」逻辑量化为可重复执行的分析流程，用于研报或内部决策",
+        "pain_points": [
+          "原始「比特币泡沫指数」数据源不透明（可能来自 CryptoQuant、OKLink 等），难以复现",
+          "MVRV + NVT 组合分析需手动从 Glassnode 拉数据并做归一化，工程成本高",
+          "历史底部信号样本量少（3-4 次），统计显著性存疑，需自行做 bootstrap 分析",
+          "需要为非技术听众（基金 LP、客户）生成可读性高的结构化报告"
+        ],
+        "tool_habits": ["Glassnode（付费）", "CryptoQuant", "Dune Analytics", "Python/Jupyter", "TradingView"],
+        "capital_range": "管理资金 100 万 - 5000 万 USD",
+        "use_frequency": "中频（每周或市场关键节点），定期更新研究框架",
+        "decision_type": "研究分析 / 周期定位",
+        "verification_status": "partially_verified",
+        "verification_evidence": "社交数据获取受限。根据 MVRV bottom、NVT signal 等话题在 Glassnode 研究社区和 CryptoQuant 的活跃程度（历史观察），该群体是链上周期指标的重度用户。SKILL.md 中 6 步骤结构化分析流程和风险收益比计算模块与研究员工作流高度匹配。"
+      },
+      {
+        "type": "active_crypto_trader_cycle_timing",
+        "description": "活跃的加密货币交易员，关注熊市末期的中线反弹机会，以技术面为主但寻求链上数据验证底部信号。",
+        "experience_level": "intermediate",
+        "primary_goal": "用链上底部信号为技术面分析提供验证，减少在趋势未反转前过早进场的风险",
+        "pain_points": [
+          "技术面底部信号（支撑位、RSI 超卖）频繁假突破，希望链上数据提供额外确认",
+          "链上指标学习曲线陡峭，MVRV/NVT 的含义和历史阈值难以快速理解",
+          "需要结论先行的信号（是/否底部），不想深入阅读原始数据"
+        ],
+        "tool_habits": ["TradingView", "CoinGlass", "Twitter/X 信号群", "Binance 行情"],
+        "capital_range": "1000 USD - 50 万 USD",
+        "use_frequency": "低频（事件驱动），BTC 大幅下跌时查阅，每季度 1-3 次",
+        "decision_type": "交易决策 / 信号验证",
+        "verification_status": "inferred",
+        "verification_evidence": "社交数据获取受限。该群体在 Twitter 上对「BTC 底部信号」相关讨论活跃，但本次无法通过 ant_market_sentiment 量化验证。置信度：低，作为补充画像保留。"
+      }
+    ],
+    "use_cases": [
+      {
+        "scenario": "熊市大幅回调后的底部确认",
+        "trigger": "BTC 价格从近期高点下跌 30-50% 且市场情绪极度悲观（FUD 期）",
+        "frequency": "每轮熊市 2-4 次，高度事件驱动",
+        "user_action": "运行 /btc-bubble-index-bottom-detector BTC --price_target=200000，查看底部信号强度和历史对比"
+      },
+      {
+        "scenario": "定期底部区域监控",
+        "trigger": "每周或每月定期检查泡沫代理指数水位，判断是否进入建仓观察区",
+        "frequency": "每周 1 次（研究员），每月 1-2 次（中长线投资者）",
+        "user_action": "无参数运行，获取当前指数水位和趋势方向"
+      },
+      {
+        "scenario": "KOL 推文方法论验证",
+        "trigger": "看到类似 @monkeyjiang 的推文声称「指数已触底」，希望自行验证",
+        "frequency": "偶发（KOL 发文时），约每季度 1-2 次",
+        "user_action": "运行 skill 对比 KOL 结论与 MVRV+NVT 代理指数的一致性"
+      },
+      {
+        "scenario": "建仓风险收益比计算",
+        "trigger": "已判断底部区域，希望用目标价量化风险收益比以决定仓位大小",
+        "frequency": "与底部确认场景同频",
+        "user_action": "提供 price_target 参数，获取历史底部后涨幅统计和风险收益比"
+      }
+    ],
+    "market_size_estimate": {
+      "total_addressable": "全球约 200-500 万活跃 BTC 中长线投资者和交易员，关注周期性底部判断",
+      "serviceable": "约 10-30 万具备链上数据认知（了解 MVRV/NVT 含义）且愿意使用 AI 分析工具的用户",
+      "core_users": "约 1-5 万专业投研人员和重度量化交易员，会将该 skill 纳入常规分析流程",
+      "confidence": "low",
+      "confidence_note": "受限于 ant_market_sentiment 工具权限未授权，未能获取实际社交讨论数据验证。估算基于 Glassnode、CryptoQuant 的公开用户规模参考和 BTC 底部话题的历史讨论热度。"
+    },
+    "competitive_landscape": [
+      {
+        "name": "Glassnode MVRV Z-Score 图表",
+        "overlap": "高度重叠（MVRV 指标是直接竞品）",
+        "differentiation": "本 Skill 集成 NVT 并输出综合信号，提供历史底部统计和风险收益比，无需用户自行解读原始图表"
+      },
+      {
+        "name": "CryptoQuant Bitcoin Bubble Index",
+        "overlap": "概念直接重叠（可能就是推文原始指标来源）",
+        "differentiation": "本 Skill 免费可用（通过 Antseer MCP），但数据为代理指标，非原始指数；CryptoQuant 付费版提供原始指标"
+      },
+      {
+        "name": "Bitcoin Rainbow Chart / Fear & Greed Index",
+        "overlap": "部分重叠（同为周期位置判断工具）",
+        "differentiation": "本 Skill 基于链上基本面（MVRV/NVT）而非市场情绪，输出更具定量性"
+      },
+      {
+        "name": "LunarCrush 情绪告警",
+        "overlap": "无直接重叠（情绪 vs 链上估值）",
+        "differentiation": "本 Skill 专注链上估值周期底部，不处理社交情绪数据"
+      }
+    ],
+    "social_validation": {
+      "keywords_searched": ["bitcoin bottom", "MVRV", "bitcoin bubble index"],
+      "total_posts_found": 0,
+      "key_findings": [
+        "ant_market_sentiment MCP 工具在本次会话中权限未授权（Permission denied），无法获取社交数据",
+        "零社交数据本身是重要信号：「bitcoin bubble index」作为精确话题词可能在英文社交圈并非主流表达，实际讨论更多分布在「MVRV bottom」「BTC cycle bottom」等分散话题下",
+        "基于 PRD 来源：推文作者 @monkeyjiang 属于中文 crypto KOL 圈，其方法论的核心受众在中文用户群中（微博、Twitter 中文 crypto 社区）",
+        "MVRV 周期底部判断在英文研究社区（Glassnode Weekly Report、CryptoQuant Quicktake）属于常规讨论话题，受众以专业研究员和中高级交易员为主"
+      ],
+      "data_gap_note": "社交验证阶段因 MCP 工具权限问题未能执行，所有画像均标注为 partially_verified 或 inferred，置信度受限"
+    },
+    "optimization_suggestions": [
+      {
+        "finding": "目标用户以中文 crypto 社区为主（推文来源为中文 KOL @monkeyjiang）",
+        "action": "优先保持中文输出支持，触发词增加中文变体「比特币底部」「BTC 见底了吗」「链上底部信号」，并在首次安装提示中明确「中文友好」",
+        "expected_impact": "覆盖核心目标用户群，减少语言障碍导致的使用摩擦"
+      },
+      {
+        "finding": "「比特币泡沫指数」原始数据来源不明（可能是 CryptoQuant / OKLink 自研指标），代理指数与原始指数存在偏差",
+        "action": "在 Skill 输出报告中增加数据源对比表，当 bubble_proxy_current 接近阈值时，建议用户交叉验证 CryptoQuant Bitcoin Bubble Index，并提供 CryptoQuant 对应页面链接",
+        "expected_impact": "提升中高级用户的信任度，减少因代理指标偏差引发的误判投诉"
+      },
+      {
+        "finding": "历史底部信号样本量仅 3-4 次，统计显著性极低，可能让专业研究员用户产生疑虑",
+        "action": "在报告中增加「统计置信区间」说明（bootstrap 区间估算），并用文字注明「本指标为方向性参考，非统计显著结论」，避免过度强调历史胜率",
+        "expected_impact": "降低专业用户对统计可靠性的质疑，提升 skill 在研究场景的可信度"
+      },
+      {
+        "finding": "使用频率极低（事件驱动，每轮熊市 2-4 次），用户可能在非熊市周期完全不使用该 skill",
+        "action": "增加「监控模式」：每周自动推送当前 bubble_proxy 水位变化，当指数 30 日下降超过 X 点时发出预警（「底部区域正在接近」），与高频监控 skill 联动",
+        "expected_impact": "将低频事件驱动转变为持续性监控，提升 skill 的日常使用黏性"
+      },
+      {
+        "finding": "交易员用户（画像 3）需要结论先行的简洁信号，但当前输出为 300 字结构化报告，信息密度对技术新手偏高",
+        "action": "增加 --brief 模式，仅输出 3 行核心信息：信号标签（🟢/🟡/🔴）、指数值/阈值、最近一次历史底部后 365d 涨幅。便于快速扫描",
+        "expected_impact": "降低使用门槛，覆盖只需要「是/否」信号的交易员用户群"
+      },
+      {
+        "finding": "Skill 当前仅支持 BTC，但分析框架（MVRV+NVT 代理指数）在 ETH 上同样适用",
+        "action": "将 symbol 参数扩展支持 ETH，并在 MVRV/NVT 数据质量低于 BTC 时输出数据质量警告，而非直接拒绝",
+        "expected_impact": "扩大潜在用户群至 ETH 中长线投资者，预计可扩大 30-50% 的适用场景"
+      }
+    ]
+  },
+  "metadata": {
+    "job_id": "prd_20260408_161034_f60062",
+    "prd_path": "/home/ubuntu/steve/auto-skill-creator/data/prd/prd_20260408_161034_f60062_prd.md",
+    "skill_path": "/home/ubuntu/steve/auto-skill-creator/skills_workflow/_data/skills/generated/btc-bubble-index-bottom-detector/SKILL.md",
+    "output_path": "/home/ubuntu/steve/auto-skill-creator/skills_workflow/_data/tasks/prd_20260408_161034_f60062_audience_result.json",
+    "report_path": "/home/ubuntu/steve/auto-skill-creator/data/audience/prd_20260408_161034_f60062_user-persona-report.md",
+    "analysis_date": "2026-04-08",
+    "social_data_available": false,
+    "social_data_gap_reason": "ant_market_sentiment MCP tool permission denied in this session; social validation skipped"
+  }
+}
