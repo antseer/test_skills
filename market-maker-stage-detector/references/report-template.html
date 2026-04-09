@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>庄家阶段识别器 | Market Maker Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<style>
+:root {
+  --bg:#0c0d12; --s1:#13141b; --s2:#1a1b24; --s3:#22232e;
+  --border:rgba(255,255,255,0.07); --ba:rgba(255,255,255,0.12);
+  --text:#ecedf2; --t2:#9497a9; --t3:#686b82;
+  --purple:#7132f5; --purple-d:#5741d8; --purple-dim:rgba(113,50,245,0.14);
+  --green:#149e61; --green-dim:rgba(20,158,97,0.14);
+  --red:#e5484d; --red-dim:rgba(229,72,77,0.14);
+  --amber:#f5a623; --amber-dim:rgba(245,166,35,0.14);
+  --cyan:#06b6d4; --cyan-dim:rgba(6,182,212,0.12);
+  --stage-acc:#3b82f6; --stage-pump:#22c55e; --stage-dist:#f5a623; --stage-dump:#e5484d;
+  --ui:'IBM Plex Sans','Noto Sans SC',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── Top Bar ── */
+.topbar{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 20px;background:var(--s1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:14px;font-weight:700;color:var(--purple);letter-spacing:-0.5px;white-space:nowrap}
+.topbar .logo span{color:var(--t2);font-weight:400;font-size:11px;margin-left:4px}
+.input-group{display:flex;max-width:560px;gap:0}
+.input-group input{flex:1;min-width:280px;background:var(--s2);border:1px solid var(--border);border-right:none;color:var(--text);padding:8px 14px;font-family:var(--mono);font-size:12px;outline:none;border-radius:8px 0 0 8px;transition:border-color .2s}
+.input-group input:focus{border-color:var(--purple)}
+.input-group input::placeholder{color:var(--t3)}
+.input-group select{background:var(--s2);border:1px solid var(--border);border-right:none;color:var(--t2);padding:8px 10px;font-size:11px;font-family:var(--ui);outline:none;cursor:pointer;-webkit-appearance:none}
+.input-group .btn-analyze{background:var(--purple);color:#fff;border:none;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;border-radius:0 8px 8px 0;white-space:nowrap;transition:background .2s}
+.input-group .btn-analyze:hover{background:var(--purple-d)}
+.topbar .tag{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--green);background:var(--green-dim);padding:3px 10px;border-radius:100px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.topbar .tag .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.wrap{max-width:1200px;margin:0 auto;padding:14px 16px 40px}
+
+/* ── Top Row: Stage + KPI ── */
+.top-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:stretch}
+.stage-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+/* Top area: ring centered */
+.stage-top{display:flex;align-items:center;justify-content:center;gap:18px;width:100%;flex:1}
+.stage-ring{position:relative;width:100px;height:100px}
+.stage-ring svg{width:100px;height:100px;transform:rotate(-90deg)}
+.stage-ring .ring-bg{fill:none;stroke:var(--s3);stroke-width:7}
+.stage-ring .ring-fg{fill:none;stroke-width:7;stroke-linecap:round}
+.stage-lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.stage-lbl .sn{font-size:20px;font-weight:700}
+.stage-lbl .sc{font-family:var(--mono);font-size:10px;color:var(--t2)}
+.stage-meta{display:flex;flex-direction:column;gap:3px}
+.stage-en{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.stage-signals{font-size:12px;color:var(--t2)}
+.stage-signals b{font-weight:600}
+.stage-tip{font-size:10px;color:var(--t3);text-align:center;line-height:1.5}
+/* Pipeline: 4 stages at bottom, segments between dots */
+.stage-pipeline{display:flex;align-items:flex-start;width:100%;padding:8px 10px 0}
+.stage-step{display:flex;flex-direction:column;align-items:center;gap:4px;z-index:1}
+.stage-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid var(--s3);background:var(--s2);transition:all .3s;flex-shrink:0}
+.stage-step.active .stage-dot{box-shadow:0 0 14px rgba(0,0,0,.3)}
+.stage-step .step-label{font-family:var(--mono);font-size:9px;color:var(--t3);white-space:nowrap}
+.stage-step.active .step-label{font-weight:600}
+.stage-step.passed .stage-dot{opacity:.7}
+.stage-step.future .stage-dot{opacity:.3}
+.stage-step.future .step-label{opacity:.3}
+.stage-seg{flex:1;height:2px;background:var(--s3);align-self:center;margin-top:-18px;min-width:10px}
+.stage-seg.filled{background:var(--t2)}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:1px;background:var(--border);border-radius:12px;overflow:hidden}
+.kpi{background:var(--s1);padding:16px 14px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+.kpi .kl{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.kpi .kv{font-size:18px;font-weight:700;letter-spacing:-0.3px}
+.kpi .kc{font-family:var(--mono);font-size:10px;margin-top:2px}
+.kc.up{color:var(--green)}.kc.dn{color:var(--red)}
+/* 第二行如果只有2个，让最后一个跨列居中不需要，保持3+2网格自然填充 */
+
+/* ── Indicator Grid ── */
+.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.cd{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.cd-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.cd-h .cn{font-family:var(--mono);font-size:10px;color:var(--purple);background:var(--purple-dim);padding:1px 6px;border-radius:4px;font-weight:500}
+.cd-h .ct{font-size:12px;font-weight:600}
+.cd-h .cv{margin-left:auto;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:100px;font-weight:500}
+.vd{background:var(--red-dim);color:var(--red)}
+.vw{background:var(--amber-dim);color:var(--amber)}
+.vs{background:var(--green-dim);color:var(--green)}
+.vi{background:var(--purple-dim);color:var(--purple)}
+.cd-b{padding:12px 14px}
+.cw{position:relative;width:100%}
+.cw canvas{width:100%!important}
+.cs{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.cs .s{display:flex;flex-direction:column;gap:1px}
+.cs .sl{font-family:var(--mono);font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
+.cs .sv{font-size:13px;font-weight:600}
+
+/* ── Gauge ── */
+.gauge-c{display:flex;flex-direction:column;align-items:center}
+.gauge-svg{width:180px;height:105px}
+.gv-text{font-size:22px;font-weight:700;text-anchor:middle}
+.gv-unit{font-family:var(--mono);font-size:9px;fill:var(--t3);text-anchor:middle}
+
+/* ── Doughnut center ── */
+.dc{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);text-align:center;pointer-events:none}
+.dc .dv{font-size:22px;font-weight:700}
+.dc .dl{font-family:var(--mono);font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+
+/* ── Dist bars ── */
+.dt{width:100%;margin-top:8px}
+.dr{display:flex;align-items:center;gap:6px;padding:3px 0}
+.dr .dl2{font-family:var(--mono);font-size:10px;color:var(--t2);width:55px;flex-shrink:0}
+.dr .db{flex:1;height:4px;background:var(--s3);border-radius:2px;overflow:hidden}
+.dr .df{height:100%;border-radius:2px}
+.dr .dp{font-family:var(--mono);font-size:10px;color:var(--t2);width:35px;text-align:right;flex-shrink:0}
+
+/* ── Signal list ── */
+.sgl{list-style:none}
+.sgl li{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px}
+.sgl .chk{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.chk.hit{background:var(--green-dim);color:var(--green)}.chk.miss{background:var(--red-dim);color:var(--red)}
+.sgl .sv2{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3)}
+
+/* ── Bottom Row: Risk + Explain ── */
+.bot-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.panel{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.panel h3{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ri{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.ri:last-child{border-bottom:none}
+.rb{font-family:var(--mono);font-size:9px;font-weight:600;padding:1px 6px;border-radius:3px;flex-shrink:0;letter-spacing:.3px}
+.rb.high{background:var(--red-dim);color:var(--red)}.rb.medium{background:var(--amber-dim);color:var(--amber)}.rb.low{background:var(--s3);color:var(--t3)}
+.rt{font-size:11px;color:var(--t2);line-height:1.5}
+.eb{padding:8px 12px;border-left:2px solid var(--purple);background:var(--s2);border-radius:0 6px 6px 0;margin-bottom:8px}
+.eb:last-child{margin-bottom:0}
+.eb .ebt{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:3px}
+.eb .ebc{font-size:11px;color:var(--t2);line-height:1.6}
+
+/* ── Footer ── */
+.foot{text-align:center;padding:16px;font-size:10px;color:var(--t3);border-top:1px solid var(--border)}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .top-row{grid-template-columns:1fr}
+  .ind-grid{grid-template-columns:1fr 1fr}
+  .bot-row{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:600px){
+  .ind-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:auto}
+  .input-group{flex-wrap:wrap}
+  .input-group input{border-radius:8px;border-right:1px solid var(--border)}
+  .input-group select{border-radius:8px;border-right:1px solid var(--border)}
+  .input-group .btn-analyze{border-radius:8px;flex:1}
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar with Input -->
+<div class="topbar">
+  <div class="logo">MM Detector<span>v1</span></div>
+  <div class="input-group">
+    <input type="text" id="token-input" placeholder="输入代币名称或合约地址 0x..." spellcheck="false">
+    <select id="chain-select">
+      <option value="ethereum">ETH</option>
+      <option value="bsc" selected>BSC</option>
+      <option value="solana">SOL</option>
+      <option value="base">Base</option>
+      <option value="arbitrum">ARB</option>
+    </select>
+    <button class="btn-analyze" id="btn-analyze">分析</button>
+  </div>
+  <div class="tag"><span class="dot"></span><span id="tag-text">READY</span></div>
+</div>
+
+<div class="wrap">
+  <!-- Top Row: Stage + KPI -->
+  <div class="top-row">
+    <div class="stage-card" id="stage-card">
+      <!-- Top: ring + meta side by side -->
+      <div class="stage-top">
+        <div class="stage-ring">
+          <svg viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="42"/>
+            <circle class="ring-fg" id="ring-fg" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+          </svg>
+          <div class="stage-lbl">
+            <div class="sn" id="sn"></div>
+            <div class="sc" id="sc-conf"></div>
+          </div>
+        </div>
+        <div class="stage-meta">
+          <div class="stage-en" id="stage-en"></div>
+          <div class="stage-signals">信号命中 <b id="sig-count"></b></div>
+          <div class="stage-tip" id="stage-tip"></div>
+        </div>
+      </div>
+      <!-- Bottom: 4-stage pipeline with segments between dots -->
+      <div class="stage-pipeline" id="stage-pipeline">
+        <div class="stage-step" data-stage="吸筹"><div class="stage-dot" style="color:#3b82f6">&#9679;</div><div class="step-label">吸筹</div></div>
+        <div class="stage-seg" data-seg="0"></div>
+        <div class="stage-step" data-stage="拉升"><div class="stage-dot" style="color:#22c55e">&#9679;</div><div class="step-label">拉升</div></div>
+        <div class="stage-seg" data-seg="1"></div>
+        <div class="stage-step" data-stage="出货"><div class="stage-dot" style="color:#f5a623">&#9679;</div><div class="step-label">出货</div></div>
+        <div class="stage-seg" data-seg="2"></div>
+        <div class="stage-step" data-stage="已跑"><div class="stage-dot" style="color:#e5484d">&#9679;</div><div class="step-label">已跑</div></div>
+      </div>
+    </div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </div>
+
+  <!-- Indicator Grid 3x2 -->
+  <div class="ind-grid">
+    <!-- #1 筹码集中度 -->
+    <div class="cd"><div class="cd-h"><span class="cn">#1</span><span class="ct">筹码集中度</span><span class="cv" id="v1"></span></div>
+      <div class="cd-b"><div class="cw" style="height:160px"><canvas id="c-chip"></canvas></div><div class="cs" id="s-chip"></div></div></div>
+    <!-- #2 成交量真实度 -->
+    <div class="cd"><div class="cd-h"><span class="cn">#2</span><span class="ct">成交量真实度</span><span class="cv" id="v2"></span></div>
+      <div class="cd-b"><div class="gauge-c"><svg class="gauge-svg" viewBox="0 0 180 105" id="g-svg"></svg></div><div class="cs" id="s-vol"></div></div></div>
+    <!-- #3 换手率 -->
+    <div class="cd"><div class="cd-h"><span class="cn">#3</span><span class="ct">换手率 & 时段</span><span class="cv" id="v3"></span></div>
+      <div class="cd-b"><div class="cw" style="height:140px"><canvas id="c-turn"></canvas></div><div class="cs" id="s-turn"></div></div></div>
+    <!-- #4 大单占比 -->
+    <div class="cd"><div class="cd-h"><span class="cn">#4</span><span class="ct">大单占比</span><span class="cv" id="v4"></span></div>
+      <div class="cd-b"><div class="cw" style="height:130px;display:flex;align-items:center;justify-content:center"><div style="position:relative;width:130px;height:130px"><canvas id="c-don"></canvas><div class="dc"><div class="dv" id="gini-v"></div><div class="dl">Gini</div></div></div></div><div class="dt" id="dist-t"></div></div></div>
+    <!-- #5 资金流向 -->
+    <div class="cd"><div class="cd-h"><span class="cn">#5</span><span class="ct">资金流向</span><span class="cv" id="v5"></span></div>
+      <div class="cd-b"><div class="cw" style="height:130px"><canvas id="c-flow"></canvas></div><div class="cs" id="s-flow"></div></div></div>
+    <!-- #6 综合判断 -->
+    <div class="cd"><div class="cd-h"><span class="cn">#6</span><span class="ct">综合阶段判断</span><span class="cv" id="v6"></span></div>
+      <div class="cd-b"><div class="cw" style="height:150px"><canvas id="c-radar"></canvas></div><ul class="sgl" id="sig-list"></ul></div></div>
+  </div>
+
+  <!-- Bottom Row: Risk + Explain -->
+  <div class="bot-row">
+    <div class="panel"><h3>&#9888;&#65039; 风险信号</h3><div id="risk-list"></div></div>
+    <div class="panel" id="exp-panel"><h3>阶段解读</h3></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<!-- ══ DATA ══ -->
+<script>
+window.__DATA__={
+  meta:{token_name:"WALK",symbol:"WALK",chain:"BSC",contract_address:"0x9234e981e395dA3BE7b00B035163571698f8f756",generated_at:"2026-04-09T16:00:00Z",time_range:"7d"},
+  kpi:{price:0.00123,price_change_24h:-5.2,mcap:1600000,volume_24h:450000,holders:2340},
+  chip_concentration:{score:78,entities:[
+    {entity:"PancakeSwap LP V3",percentage:57,wallets_count:1,is_suspicious:false},
+    {entity:"Vault (youcanshortit)",percentage:40,wallets_count:1,is_suspicious:true},
+    {entity:"PancakeSwap LP V2",percentage:3,wallets_count:1,is_suspicious:false}
+  ],threshold:10,verdict:"高度集中"},
+  volume_authenticity:{vol_per_holder:192.3,threshold:2000,peer_median:85,is_anomaly:true,ratio_vs_peer:2.26,verdict:"疑似刷量"},
+  turnover:{turnover_rate:0.281,hourly_volumes:[
+    {h:0,v:12000,a:false},{h:1,v:8500,a:false},{h:2,v:6200,a:false},{h:3,v:5100,a:false},
+    {h:4,v:7800,a:false},{h:5,v:9200,a:false},{h:6,v:14500,a:false},{h:7,v:18200,a:false},
+    {h:8,v:22000,a:false},{h:9,v:25600,a:false},{h:10,v:19800,a:false},{h:11,v:16400,a:false},
+    {h:12,v:21000,a:false},{h:13,v:28500,a:false},{h:14,v:95000,a:true},{h:15,v:72000,a:true},
+    {h:16,v:31000,a:false},{h:17,v:18500,a:false},{h:18,v:14200,a:false},{h:19,v:11800,a:false},
+    {h:20,v:9500,a:false},{h:21,v:7200,a:false},{h:22,v:5800,a:false},{h:23,v:4200,a:false}
+  ],anomaly_hours:[14,15],mean_hourly:18750},
+  large_order_ratio:{top10_pct:68.5,gini:0.72,distribution_buckets:[
+    {label:"<$100",count:1200,volume_pct:8.5},{label:"$100-1K",count:450,volume_pct:12},
+    {label:"$1K-10K",count:85,volume_pct:11},{label:">$10K",count:15,volume_pct:68.5}
+  ],verdict:"少数地址驱动"},
+  fund_flow:{smart_money_buy:125000,smart_money_sell:45000,whale_buy:280000,whale_sell:310000,retail_buy:95000,retail_sell:180000},
+  stage_verdict:{stage:"出货",confidence:72,signals_matched:4,total_signals:6,
+    signal_dimensions:{chip_concentration:.8,volume_authenticity:.6,turnover_anomaly:.7,large_order_dominance:.85,smart_money_exit:.65,holder_price_divergence:.9},
+    all_signals:[
+      {name:"Holder 增长但价格不涨",matched:true,value:"+22% / -5.2%"},
+      {name:"大户持仓占比下降",matched:true,value:"-8.5%"},
+      {name:"Smart Money 净卖出",matched:false,value:"净买入 $80K"},
+      {name:"换手率升高价格不涨",matched:true,value:"28.1% / -5.2%"},
+      {name:"大单占比 > 60%",matched:true,value:"68.5%"},
+      {name:"成交量集中时段",matched:false,value:"2h 异常"}
+    ]},
+  risk_signals:[
+    {severity:"high",text:"筹码集中度 78 — 40% 代币集中在单一 Vault 合约中"},
+    {severity:"high",text:"Holder 增长 22% 但价格跌 5.2% — 筹码正在派发"},
+    {severity:"medium",text:"Vol/Holder $192 (同类 $85) — 成交量偏高"},
+    {severity:"medium",text:"14:00-15:00 UTC 成交量飙升 — 疑似集中操作"},
+    {severity:"low",text:"LP 锁定状态未知 — 需外部验证"}
+  ],
+  stage_explanation:{
+    description:"庄家正在将集中持有的筹码逐步转移给散户。价格横盘但 Holder 持续增长，说明筹码从大户流向散户。",
+    retail_implication:"高风险。追涨极危险 — 买入的筹码大概率来自正在减仓的大户。",
+    action_suggestion:"不要追涨买入。已持仓者考虑分批减仓。等出货结束、价格回调后再评估。"
+  }
+};
+</script>
+
+<!-- ══ RENDER ══ -->
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+const D=window.__DATA__;
+const SM={
+  '吸筹':{color:'#3b82f6',dim:'rgba(59,130,246,.14)',en:'ACCUMULATING'},
+  '拉升':{color:'#22c55e',dim:'rgba(34,197,94,.14)',en:'PUMPING'},
+  '出货':{color:'#f5a623',dim:'rgba(245,166,35,.14)',en:'DISTRIBUTING'},
+  '已跑':{color:'#e5484d',dim:'rgba(229,72,77,.14)',en:'DUMPED'}
+};
+const sc=SM[D.stage_verdict.stage]||SM['已跑'];
+const fmt=n=>n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+(n/1e3).toFixed(1)+'K':'$'+n.toFixed(2);
+const fk=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n+'';
+
+// Input
+document.getElementById('token-input').value=D.meta.contract_address;
+document.getElementById('chain-select').value=D.meta.chain.toLowerCase();
+document.getElementById('tag-text').textContent=D.meta.symbol+' | '+D.meta.chain;
+
+// Stage
+const card=document.getElementById('stage-card');
+card.style.borderTop='3px solid '+sc.color;
+// Pipeline: highlight current + passed stages, color segments
+const stages=['吸筹','拉升','出货','已跑'];
+const curIdx=stages.indexOf(D.stage_verdict.stage);
+const steps=document.querySelectorAll('.stage-step');
+steps.forEach((el,i)=>{
+  const stg=stages[i];const sInfo=SM[stg];
+  if(i<curIdx){el.classList.add('passed');el.querySelector('.stage-dot').style.borderColor=sInfo.color;el.querySelector('.stage-dot').style.background=sInfo.color+'22';el.querySelector('.step-label').style.color=sInfo.color;}
+  else if(i===curIdx){el.classList.add('active');el.querySelector('.stage-dot').style.borderColor=sInfo.color;el.querySelector('.stage-dot').style.background=sInfo.color;el.querySelector('.stage-dot').style.color='#fff';el.querySelector('.stage-dot').style.boxShadow='0 0 14px '+sInfo.color+'55';el.querySelector('.step-label').style.color=sInfo.color;}
+  else{el.classList.add('future');}
+});
+// color segments between dots
+document.querySelectorAll('.stage-seg').forEach(seg=>{
+  const idx=parseInt(seg.dataset.seg);
+  if(idx<curIdx){seg.classList.add('filled');seg.style.background=SM[stages[idx]].color;}
+});
+// ring
+document.getElementById('stage-en').textContent=sc.en;
+document.getElementById('stage-en').style.color=sc.color;
+document.getElementById('sn').textContent=D.stage_verdict.stage;
+document.getElementById('sn').style.color=sc.color;
+document.getElementById('sc-conf').textContent=D.stage_verdict.confidence+'%';
+const ring=document.getElementById('ring-fg');
+ring.style.stroke=sc.color;
+const circ=2*Math.PI*42;
+ring.setAttribute('stroke-dasharray',circ);
+ring.setAttribute('stroke-dashoffset',circ*(1-D.stage_verdict.confidence/100));
+document.getElementById('sig-count').textContent=D.stage_verdict.signals_matched+'/'+D.stage_verdict.total_signals;
+document.getElementById('sig-count').style.color=sc.color;
+document.getElementById('stage-tip').textContent=D.stage_explanation.action_suggestion;
+
+// KPI — 3 columns x 2 rows
+const turnoverPct=(D.turnover.turnover_rate*100).toFixed(1)+'%';
+const kpis=[
+  {l:'价格',v:'$'+D.kpi.price.toFixed(6)},
+  {l:'市值',v:fmt(D.kpi.mcap)},
+  {l:'24H 涨跌',v:(D.kpi.price_change_24h>0?'+':'')+D.kpi.price_change_24h.toFixed(1)+'%',c:D.kpi.price_change_24h>=0?'up':'dn'},
+  {l:'24H 交易量',v:fmt(D.kpi.volume_24h)},
+  {l:'Holders',v:D.kpi.holders.toLocaleString()},
+  {l:'换手率',v:turnoverPct}
+];
+const kg=document.getElementById('kpi-grid');
+kpis.forEach(k=>{
+  const d=document.createElement('div');d.className='kpi';
+  d.innerHTML='<div class="kl">'+k.l+'</div><div class="kv">'+k.v+'</div>'+(k.c?'<div class="kc '+k.c+'">'+k.v+'</div>':'');
+  kg.appendChild(d);
+});
+
+// Chart defaults
+Chart.defaults.color='#9497a9';
+Chart.defaults.borderColor='rgba(255,255,255,.06)';
+Chart.defaults.font.family="'IBM Plex Sans','Noto Sans SC',sans-serif";
+Chart.defaults.font.size=10;
+Chart.defaults.plugins.legend.display=false;
+Chart.defaults.plugins.tooltip.backgroundColor='#1a1b24';
+Chart.defaults.plugins.tooltip.borderColor='rgba(255,255,255,.1)';
+Chart.defaults.plugins.tooltip.borderWidth=1;
+Chart.defaults.plugins.tooltip.cornerRadius=6;
+Chart.defaults.plugins.tooltip.padding=8;
+
+// #1 Chip
+const cd=D.chip_concentration;
+const v1=document.getElementById('v1');v1.textContent=cd.verdict;v1.className='cv '+(cd.score>70?'vd':cd.score>40?'vw':'vs');
+new Chart(document.getElementById('c-chip'),{type:'bar',data:{
+  labels:cd.entities.map(e=>e.entity.length>16?e.entity.slice(0,14)+'..':e.entity),
+  datasets:[{data:cd.entities.map(e=>e.percentage),backgroundColor:cd.entities.map(e=>e.is_suspicious?'rgba(229,72,77,.6)':'rgba(6,182,212,.5)'),borderColor:cd.entities.map(e=>e.is_suspicious?'#e5484d':'#06b6d4'),borderWidth:1,borderRadius:3,barThickness:20}]
+},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>c.parsed.x.toFixed(1)+'%'}}}}});
+document.getElementById('s-chip').innerHTML='<div class="s"><span class="sl">集中度</span><span class="sv" style="color:'+(cd.score>70?'var(--red)':'var(--amber)')+'">'+cd.score+'/100</span></div><div class="s"><span class="sl">阈值</span><span class="sv">'+cd.threshold+'%</span></div>';
+
+// #2 Gauge
+const vd=D.volume_authenticity;
+const v2=document.getElementById('v2');v2.textContent=vd.verdict;v2.className='cv '+(vd.is_anomaly?'vw':'vs');
+const gs=document.getElementById('g-svg');
+const mx=Math.max(vd.threshold*1.5,vd.vol_per_holder*1.3);
+const pA=(vd.peer_median/mx)*180,vA=Math.min((vd.vol_per_holder/mx)*180,178),tA=(vd.threshold/mx)*180;
+function arc(cx,cy,r,s,e){const sr=(s-180)*Math.PI/180,er=(e-180)*Math.PI/180;return'M '+(cx+r*Math.cos(sr))+' '+(cy+r*Math.sin(sr))+' A '+r+' '+r+' 0 '+(e-s>180?1:0)+' 1 '+(cx+r*Math.cos(er))+' '+(cy+r*Math.sin(er))}
+const gcx=90,gcy=90,gr=65;
+const na=(vA-180)*Math.PI/180;
+gs.innerHTML='<path d="'+arc(gcx,gcy,gr,0,pA)+'" fill="none" stroke="rgba(20,158,97,.35)" stroke-width="12" stroke-linecap="round"/>'
++'<path d="'+arc(gcx,gcy,gr,pA,tA)+'" fill="none" stroke="rgba(245,166,35,.35)" stroke-width="12" stroke-linecap="round"/>'
++'<path d="'+arc(gcx,gcy,gr,tA,180)+'" fill="none" stroke="rgba(229,72,77,.35)" stroke-width="12" stroke-linecap="round"/>'
++'<line x1="'+gcx+'" y1="'+gcy+'" x2="'+(gcx+(gr-4)*Math.cos(na))+'" y2="'+(gcy+(gr-4)*Math.sin(na))+'" stroke="'+(vd.is_anomaly?'#f5a623':'#149e61')+'" stroke-width="2.5" stroke-linecap="round"/>'
++'<circle cx="'+gcx+'" cy="'+gcy+'" r="4" fill="var(--s3)" stroke="var(--t2)" stroke-width="1"/>'
++'<text class="gv-text" x="'+gcx+'" y="'+(gcy-18)+'" fill="'+(vd.is_anomaly?'#f5a623':'#149e61')+'">$'+vd.vol_per_holder.toFixed(0)+'</text>'
++'<text class="gv-unit" x="'+gcx+'" y="'+(gcy-4)+'">Vol / Holder</text>';
+document.getElementById('s-vol').innerHTML='<div class="s"><span class="sl">同类中位</span><span class="sv">$'+vd.peer_median+'</span></div><div class="s"><span class="sl">阈值</span><span class="sv">$'+vd.threshold.toLocaleString()+'</span></div><div class="s"><span class="sl">倍数</span><span class="sv" style="color:var(--amber)">'+vd.ratio_vs_peer.toFixed(1)+'x</span></div>';
+
+// #3 Turnover
+const td=D.turnover;
+const v3=document.getElementById('v3');v3.textContent=(td.turnover_rate*100).toFixed(1)+'%';v3.className='cv '+(td.anomaly_hours.length?'vw':'vs');
+new Chart(document.getElementById('c-turn'),{type:'bar',data:{
+  labels:td.hourly_volumes.map(h=>h.h+':00'),
+  datasets:[{data:td.hourly_volumes.map(h=>h.v),backgroundColor:td.hourly_volumes.map(h=>h.a?'rgba(229,72,77,.6)':'rgba(113,50,245,.4)'),borderColor:td.hourly_volumes.map(h=>h.a?'#e5484d':'rgba(113,50,245,.7)'),borderWidth:1,borderRadius:2}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{callback:v=>fk(v)}}},plugins:{tooltip:{callbacks:{label:c=>fmt(c.parsed.y)}}}},
+plugins:[{id:'ml',afterDraw(ch){const y=ch.scales.y.getPixelForValue(td.mean_hourly);const c=ch.ctx;c.save();c.setLineDash([3,3]);c.strokeStyle='rgba(245,166,35,.4)';c.lineWidth=1;c.beginPath();c.moveTo(ch.chartArea.left,y);c.lineTo(ch.chartArea.right,y);c.stroke();c.restore()}}]});
+document.getElementById('s-turn').innerHTML='<div class="s"><span class="sl">换手率</span><span class="sv">'+(td.turnover_rate*100).toFixed(1)+'%</span></div><div class="s"><span class="sl">异常时段</span><span class="sv" style="color:var(--red)">'+(td.anomaly_hours.length?td.anomaly_hours.map(h=>h+':00').join(','):'无')+'</span></div>';
+
+// #4 Doughnut
+const ld=D.large_order_ratio;
+const v4=document.getElementById('v4');v4.textContent=ld.verdict;v4.className='cv '+(ld.top10_pct>60?'vd':'vw');
+document.getElementById('gini-v').textContent=ld.gini.toFixed(2);
+new Chart(document.getElementById('c-don'),{type:'doughnut',data:{labels:['Top 10%','其余 90%'],datasets:[{data:[ld.top10_pct,100-ld.top10_pct],backgroundColor:['rgba(229,72,77,.6)','rgba(255,255,255,.06)'],borderColor:['#e5484d','rgba(255,255,255,.08)'],borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{tooltip:{callbacks:{label:c=>c.label+': '+c.parsed.toFixed(1)+'%'}}}}});
+const dt=document.getElementById('dist-t');
+ld.distribution_buckets.forEach(b=>{const c=b.volume_pct>50?'var(--red)':b.volume_pct>20?'var(--amber)':'var(--cyan)';dt.innerHTML+='<div class="dr"><span class="dl2">'+b.label+'</span><div class="db"><div class="df" style="width:'+b.volume_pct+'%;background:'+c+'"></div></div><span class="dp">'+b.volume_pct+'%</span></div>'});
+
+// #5 Flow
+const ff=D.fund_flow;const smN=ff.smart_money_buy-ff.smart_money_sell;
+const v5=document.getElementById('v5');v5.textContent=smN>0?'SM 净买入':'SM 净卖出';v5.className='cv '+(smN>0?'vs':'vd');
+new Chart(document.getElementById('c-flow'),{type:'bar',data:{
+  labels:['Smart Money','大户','散户'],
+  datasets:[{label:'买入',data:[ff.smart_money_buy,ff.whale_buy,ff.retail_buy],backgroundColor:'rgba(20,158,97,.5)',borderColor:'#149e61',borderWidth:1,borderRadius:3},
+  {label:'卖出',data:[-ff.smart_money_sell,-ff.whale_sell,-ff.retail_sell],backgroundColor:'rgba(229,72,77,.5)',borderColor:'#e5484d',borderWidth:1,borderRadius:3}]
+},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,grid:{color:'rgba(255,255,255,.03)'},ticks:{callback:v=>v<0?fk(-v):fk(v)}},y:{stacked:true,grid:{display:false}}},plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:8,padding:8,font:{size:9,family:"'JetBrains Mono',monospace"}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(Math.abs(c.parsed.x))}}}}});
+document.getElementById('s-flow').innerHTML='<div class="s"><span class="sl">SM 净流</span><span class="sv" style="color:'+(smN>0?'var(--green)':'var(--red)')+'">'+(smN>0?'+':'')+fmt(smN)+'</span></div><div class="s"><span class="sl">大户净流</span><span class="sv" style="color:'+(ff.whale_buy-ff.whale_sell>0?'var(--green)':'var(--red)')+'">'+fmt(ff.whale_buy-ff.whale_sell)+'</span></div>';
+
+// #6 Radar
+const sv=D.stage_verdict;const dims=sv.signal_dimensions;
+const v6=document.getElementById('v6');v6.textContent=sv.stage;v6.style.background=sc.dim;v6.style.color=sc.color;v6.className='cv';
+new Chart(document.getElementById('c-radar'),{type:'radar',data:{
+  labels:['筹码集中','量能真实','换手异常','大单主导','SM退出','持仓背离'],
+  datasets:[{data:[dims.chip_concentration,dims.volume_authenticity,dims.turnover_anomaly,dims.large_order_dominance,dims.smart_money_exit,dims.holder_price_divergence],borderColor:sc.color,backgroundColor:sc.dim,borderWidth:1.5,pointBackgroundColor:sc.color,pointRadius:2}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:1,grid:{color:'rgba(255,255,255,.05)'},angleLines:{color:'rgba(255,255,255,.05)'},pointLabels:{font:{size:9},color:'#9497a9'},ticks:{display:false}}}}});
+const sl=document.getElementById('sig-list');
+sv.all_signals.forEach(s=>{sl.innerHTML+='<li><span class="chk '+(s.matched?'hit':'miss')+'">'+(s.matched?'\u2713':'\u2717')+'</span><span>'+s.name+'</span><span class="sv2">'+s.value+'</span></li>'});
+
+// Risk
+const rl=document.getElementById('risk-list');
+D.risk_signals.forEach(r=>{rl.innerHTML+='<div class="ri"><span class="rb '+r.severity+'">'+r.severity.toUpperCase()+'</span><span class="rt">'+r.text+'</span></div>'});
+
+// Explain
+const ep=document.getElementById('exp-panel');
+const ex=D.stage_explanation;
+ep.innerHTML+='<div class="eb" style="border-left-color:'+sc.color+'"><div class="ebt">含义</div><div class="ebc">'+ex.description+'</div></div>';
+ep.innerHTML+='<div class="eb" style="border-left-color:var(--red)"><div class="ebt">风险</div><div class="ebc">'+ex.retail_implication+'</div></div>';
+ep.innerHTML+='<div class="eb" style="border-left-color:var(--green)"><div class="ebt">建议</div><div class="ebc">'+ex.action_suggestion+'</div></div>';
+
+// Footer
+document.getElementById('foot').textContent='基于 @agintender 方法论 | Antseer MCP 数据 | 生成: '+new Date(D.meta.generated_at).toLocaleString('zh-CN')+' | 不构成投资建议';
+});
+</script>
+</body>
+</html>
