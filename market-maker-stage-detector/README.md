@@ -52,22 +52,64 @@ Tell your AI Agent:
 
 ## Sample Output
 
+> Real analysis of RAVE (RaveDAO) on BSC — April 2026.
+
 ```
-Token: WALK | Chain: BSC | MCap: $1.60M
-Stage: DISTRIBUTING | Confidence: 72%
-Signals: 4/6 matched
-
-Key Findings:
-- [HIGH] Chip concentration 78 — 40% in single Vault contract
-- [HIGH] Holders +22% but price -5.2% — chips being distributed
-- [MED] Vol/Holder $192 (peer median $85) — elevated volume
-
-Suggestion: Do not chase. Consider reducing positions.
-
-Full report: output/mm-report-WALK.html
+🔴 RAVE | BSC | MCap $250.4M | FDV $26.0M
+Stage: Pumping (PUMPING) | Confidence 75% (3/4)
+Suggestion: Do not chase — only $137K liquidity, exit slippage will be severe.
 ```
 
-The HTML report includes interactive Chart.js visualizations for all 6 indicators.
+### Risk Signals
+
+| Level | Signal — Evidence |
+|-------|-------------------|
+| 🔴 HIGH | Extreme chip concentration — Top 4 addresses hold 80.2%, #3 and #4 share GnosisSafeProxyFactory |
+| 🔴 HIGH | Fresh wallet with massive holdings — #4 wallet created yesterday (4/9), immediately received 11.3% of supply ($2.96M) |
+| 🔴 HIGH | Liquidity-to-mcap mismatch — $137K LP vs $250M mcap, Vol/LP = 33.8x |
+| 🔴 HIGH | Abnormal fresh wallet inflow — +$8.48M net inflow, possible wash trading or retail FOMO |
+| 🟡 MED | Smart Money selling — Smart Trader net sold $26.7K |
+| 🟡 MED | Bot-dominated trading — Vault Bot (0x238a) single address contributed $4.18M volume |
+
+### Chip Distribution
+
+| # | Address | Share | 24h Change | Notes |
+|---|---------|-------|------------|-------|
+| 1 | 0xf073..06fa | 36.7% | 0 | Funded from Binance Hot Wallet, 30d no movement |
+| 2 | 0x2d81..ecab | 20.1% | 0 | Isolated wallet, 30d no movement |
+| 3 | 0x6020..74b0 | 12.1% | 0 | Gnosis Safe, deployed 2025-12-04 |
+| 4 | 0x0a1f..90d7 | 11.3% | +2.8M tokens | **Gnosis Safe, created yesterday (4/9)** |
+| 5 | 0x73d8..46db | 8.9% | -247K | Binance DEX/CEX Trading Bot |
+
+Top 4 combined: **80.2%**
+
+Related wallets: #3 and #4 both created via GnosisSafeProxyFactory (0x4e1dcf) — likely same team, combined 23.4%.
+
+### Fund Flow
+
+| Group | Net Flow | Direction |
+|-------|----------|-----------|
+| Fresh Wallets | +$8,479,235 | 🟢 Massive inflow |
+| Top PnL Traders | +$480,444 | 🟢 Buying |
+| Smart Trader | -$26,685 | 🔴 Selling |
+| Exchange | -$553,021 | 🔴 Outflow |
+
+Fresh wallet surge of $8.48M is the standout signal — could be retail FOMO or maker-fabricated buy pressure. Smart Trader already exiting small positions.
+
+### Signal Matching
+
+```
+✅ Price surged >20%: +239% in 24h
+✅ Large order concentration: Vault Bot single address drove $4.18M volume
+✅ Volume concentrated in specific hours: 6h volume $3.57M = 77% of 24h
+❌ Turnover >30%: Actual 17.8%, below threshold
+```
+
+Pumping in progress — few addresses driving volume, chips not yet widely distributed. If holding, set stop-profit now; if not holding, chasing is high risk.
+
+Additional warning: Smart Trader selling + 1h price already pulling back -3.5% — early signs of transition from pumping to distribution.
+
+> Disclaimer: For reference only, not investment advice. Related wallet detection may have gaps — verify high-concentration entities manually.
 
 ## When to Use / When Not to Use
 

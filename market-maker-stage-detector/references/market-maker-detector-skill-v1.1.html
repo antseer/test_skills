@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>庄家阶段识别器 | Market Maker Stage Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<style>
+/* ── Variables ── */
+:root {
+  --bg:#08090d; --bg2:#0f1117;
+  --s1:#161821; --s2:#1c1e2a; --s3:#252736;
+  --border:rgba(124,92,252,0.12); --border-h:rgba(124,92,252,0.25);
+  --text:#e8eaf0; --t2:#8b8fa4; --t3:#5c6078;
+  --neon:#00ff88; --neon-dim:rgba(0,255,136,0.1); --neon-b:rgba(0,255,136,0.2);
+  --purple:#7c5cfc; --purple-dim:rgba(124,92,252,0.12); --purple-b:rgba(124,92,252,0.25);
+  --red:#ff4d6a; --red-dim:rgba(255,77,106,0.1);
+  --amber:#ffb224; --amber-dim:rgba(255,178,36,0.1);
+  --cyan:#00d4aa; --cyan-dim:rgba(0,212,170,0.1);
+  --stage-acc:#4da6ff; --stage-pump:#00ff88; --stage-dist:#ffb224; --stage-dump:#ff4d6a;
+  --heading:'Space Grotesk','Noto Sans SC',sans-serif;
+  --body:'Inter','Noto Sans SC',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --left-w:340px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-width:thin;scrollbar-color:var(--s3) transparent}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(124,92,252,0.3)}
+
+/* ── Shell ── */
+.shell{display:grid;grid-template-columns:var(--left-w) 1fr;min-height:100vh}
+
+/* ── Left Panel ── */
+.lp{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0}
+.lp-head{padding:28px 22px 20px;border-bottom:1px solid var(--border)}
+.lp-icon{width:40px;height:40px;border-radius:50%;background:var(--neon-dim);border:1.5px solid var(--neon-b);display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:var(--neon);font-size:18px}
+.lp-title{font-family:var(--heading);font-size:18px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px}
+.lp-sub{font-size:12px;color:var(--t2);line-height:1.5}
+
+.lp-section{padding:18px 22px;border-bottom:1px solid var(--border)}
+.lp-section-title{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:14px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--neon);margin-bottom:5px}
+.field label .req{color:var(--red);margin-left:2px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:12px;font-family:var(--body);border-radius:8px;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,92,252,0.2)}
+.field select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6078'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.field textarea{resize:vertical;min-height:60px;font-size:11px}
+.field input::placeholder,.field textarea::placeholder{color:var(--t3)}
+
+.btn-exec{width:100%;padding:12px;background:linear-gradient(135deg,var(--neon),#00cc6e);color:#08090d;font-family:var(--heading);font-size:13px;font-weight:700;border:none;border-radius:8px;cursor:pointer;letter-spacing:0.3px;transition:opacity .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-exec:hover{opacity:.9}.btn-exec:active{transform:scale(.98)}
+
+.lp-info{padding:18px 22px;border-bottom:1px solid var(--border)}
+.lp-info p{font-size:11px;color:var(--t2);line-height:1.7}
+.lp-info strong{color:var(--text);font-weight:600}
+
+.legend{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.legend-item{display:flex;align-items:center;gap:8px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-name{font-size:11px;font-weight:600;min-width:28px}
+.legend-desc{font-size:10px;color:var(--t3)}
+
+.lp-foot{margin-top:auto;padding:16px 22px;border-top:1px solid var(--border);text-align:center}
+.lp-foot span{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:0.5px}
+
+/* ── Right Panel ── */
+.rp{overflow-y:auto;height:100vh;padding:20px 24px 40px;background:var(--bg)}
+
+.rp-header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:18px}
+.rp-header h2{font-family:var(--heading);font-size:15px;font-weight:600}
+.status-badge{font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:100px;letter-spacing:0.5px}
+.status-ok{background:var(--neon-dim);color:var(--neon);border:1px solid var(--neon-b)}
+.rp-meta{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3)}
+
+/* ── Hero: Stage ── */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:16px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-20%;width:300px;height:300px;background:radial-gradient(circle,rgba(124,92,252,0.06) 0%,transparent 70%);pointer-events:none}
+.stage-ring{position:relative;width:120px;height:120px;flex-shrink:0}
+.stage-ring svg{width:120px;height:120px;transform:rotate(-90deg)}
+.stage-ring .ring-bg{fill:none;stroke:var(--s3);stroke-width:6}
+.stage-ring .ring-fg{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.stage-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.stage-center .stage-name{font-family:var(--heading);font-size:22px;font-weight:700}
+.stage-center .stage-conf{font-family:var(--mono);font-size:11px;color:var(--t2)}
+
+.hero-right{display:flex;flex-direction:column;gap:10px}
+.hero-en{font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase}
+.hero-signals{font-size:12px;color:var(--t2)}
+.hero-signals b{font-weight:600}
+
+.pipeline{display:flex;align-items:center;gap:0;margin:4px 0}
+.pip-step{display:flex;flex-direction:column;align-items:center;gap:3px}
+.pip-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid var(--s3);background:var(--s2);transition:all .3s;font-weight:600}
+.pip-step.active .pip-dot{box-shadow:0 0 16px rgba(0,0,0,.4)}
+.pip-step .pip-lbl{font-family:var(--mono);font-size:8px;color:var(--t3);white-space:nowrap;letter-spacing:0.5px}
+.pip-step.active .pip-lbl{font-weight:600}
+.pip-step.passed .pip-dot{opacity:.6}
+.pip-step.future .pip-dot{opacity:.25}
+.pip-step.future .pip-lbl{opacity:.25}
+.pip-seg{flex:1;height:2px;background:var(--s3);min-width:16px}
+
+.hero-advice{font-size:14px;font-weight:600;padding:8px 14px;border-radius:8px;line-height:1.5}
+
+/* ── KPI Bar ── */
+.kpi-bar{display:flex;gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.kpi{flex:1;background:var(--s1);padding:14px 12px;text-align:center;min-width:0}
+.kpi .kl{font-family:var(--mono);font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3);margin-bottom:3px;white-space:nowrap}
+.kpi .kv{font-family:var(--heading);font-size:17px;font-weight:700;letter-spacing:-0.3px;white-space:nowrap}
+.kpi .kc{font-family:var(--mono);font-size:10px;margin-top:2px}
+.kc.up{color:var(--neon)}.kc.dn{color:var(--red)}
+
+/* ── Indicator Cards ── */
+.ind-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:var(--border-h)}
+.card-h{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.card-num{font-family:var(--mono);font-size:10px;color:var(--purple);background:var(--purple-dim);padding:2px 7px;border-radius:4px;font-weight:500}
+.card-title{font-family:var(--heading);font-size:13px;font-weight:600}
+.card-badge{margin-left:auto;font-family:var(--heading);font-size:14px;padding:4px 14px;border-radius:100px;font-weight:700;white-space:nowrap;letter-spacing:0.3px}
+.badge-danger{background:rgba(255,77,106,0.15);color:var(--red);border:1px solid rgba(255,77,106,0.25)}
+.badge-warn{background:rgba(255,178,36,0.15);color:var(--amber);border:1px solid rgba(255,178,36,0.25)}
+.badge-ok{background:rgba(0,255,136,0.15);color:var(--neon);border:1px solid rgba(0,255,136,0.25)}
+.badge-info{background:rgba(124,92,252,0.15);color:var(--purple);border:1px solid rgba(124,92,252,0.25)}
+
+.card-body{padding:14px 16px}
+.chart-wrap{position:relative;width:100%}
+.chart-wrap canvas{width:100%!important}
+.stats{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:1px}
+.stat .sl{font-family:var(--mono);font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
+.stat .sv{font-size:13px;font-weight:600}
+
+/* ── Educational Sections ── */
+.edu{padding:0 16px 14px;display:flex;flex-direction:column;gap:8px}
+.edu-block{padding:8px 12px;border-left:2px solid var(--purple);background:var(--s2);border-radius:0 6px 6px 0}
+.edu-block.meaning{border-left-color:var(--cyan)}
+.edu-label{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.edu-text{font-size:11px;color:var(--t2);line-height:1.7}
+
+/* ── Gauge SVG ── */
+.gauge-c{display:flex;flex-direction:column;align-items:center}
+.gauge-svg{width:200px;height:115px}
+
+/* ── Doughnut center ── */
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);text-align:center;pointer-events:none}
+.donut-center .dv{font-family:var(--heading);font-size:22px;font-weight:700}
+.donut-center .dl{font-family:var(--mono);font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+
+/* ── Distribution bars ── */
+.dist{width:100%;margin-top:8px}
+.dist-row{display:flex;align-items:center;gap:6px;padding:3px 0}
+.dist-row .dl{font-family:var(--mono);font-size:10px;color:var(--t2);width:55px;flex-shrink:0}
+.dist-row .db{flex:1;height:4px;background:var(--s3);border-radius:2px;overflow:hidden}
+.dist-row .df{height:100%;border-radius:2px}
+.dist-row .dp{font-family:var(--mono);font-size:10px;color:var(--t2);width:35px;text-align:right;flex-shrink:0}
+
+/* ── Signal checklist ── */
+.sig-list{list-style:none}
+.sig-list li{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px}
+.sig-chk{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+.chk-hit{background:var(--neon-dim);color:var(--neon)}.chk-miss{background:var(--red-dim);color:var(--red)}
+.sig-val{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3)}
+
+/* ── Bottom Row ── */
+.bot-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.panel{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.panel h3{font-family:var(--heading);font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.risk-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.risk-item:last-child{border-bottom:none}
+.risk-sev{font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 7px;border-radius:3px;flex-shrink:0;letter-spacing:.5px;text-transform:uppercase}
+.sev-high{background:var(--red-dim);color:var(--red)}.sev-medium{background:var(--amber-dim);color:var(--amber)}.sev-low{background:var(--s3);color:var(--t3)}
+.risk-text{font-size:11px;color:var(--t2);line-height:1.6}
+
+.explain-block{padding:10px 14px;border-left:2.5px solid var(--purple);background:var(--s2);border-radius:0 8px 8px 0;margin-bottom:8px}
+.explain-block:last-child{margin-bottom:0}
+.explain-block.eb-risk{border-left-color:var(--red)}
+.explain-block.eb-action{border-left-color:var(--neon)}
+.eb-title{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:4px}
+.eb-content{font-size:12px;color:var(--t2);line-height:1.7}
+
+/* ── Footer ── */
+.foot{text-align:center;padding:16px;font-family:var(--mono);font-size:9px;color:var(--t3);border-top:1px solid var(--border);letter-spacing:0.3px}
+
+/* ── Responsive ── */
+@media(max-width:960px){
+  .shell{grid-template-columns:1fr}
+  .lp{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}
+  .rp{height:auto}
+  .ind-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .ind-grid{grid-template-columns:1fr}
+  .hero{grid-template-columns:1fr;text-align:center}
+  .hero-right{align-items:center}
+  .pipeline{justify-content:center}
+  .kpi-bar{flex-wrap:wrap}
+  .kpi{min-width:30%}
+  .bot-row{grid-template-columns:1fr}
+  .rp{padding:14px 12px 30px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════ LEFT PANEL ════ -->
+<aside class="lp">
+  <div class="lp-head">
+    <div class="lp-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10"/><path d="M2 12h20"/></svg></div>
+    <div class="lp-title">庄家阶段识别器</div>
+    <div class="lp-sub">通过 6 个链上信号维度，判断 Token 背后庄家当前所处阶段（吸筹 / 拉升 / 出货 / 已跑）</div>
+  </div>
+
+  <div class="lp-section">
+    <div class="lp-section-title">Parameters</div>
+    <div class="field">
+      <label>Chain</label>
+      <select id="f-chain">
+        <option value="ethereum">Ethereum</option>
+        <option value="bsc" selected>BSC</option>
+        <option value="solana">Solana</option>
+        <option value="base">Base</option>
+        <option value="arbitrum">Arbitrum</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Symbol / Address<span class="req">*</span></label>
+      <input type="text" id="f-symbol" placeholder="合约地址或代币名称" spellcheck="false">
+    </div>
+    <div class="field">
+      <label>Time Range</label>
+      <select id="f-range">
+        <option value="24h">24 Hours</option>
+        <option value="7d" selected>7 Days</option>
+        <option value="30d">30 Days</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Analysis Depth</label>
+      <select id="f-depth">
+        <option value="quick">Quick</option>
+        <option value="standard" selected>Standard</option>
+        <option value="deep">Deep</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Additional Instructions</label>
+      <textarea id="f-notes" placeholder="可选：额外分析要求..."></textarea>
+    </div>
+    <button class="btn-exec" id="btn-exec"><span>&#9654;</span> Execute Skill</button>
+  </div>
+
+  <div class="lp-info">
+    <div class="lp-section-title">Methodology</div>
+    <p>本工具基于 <strong>6 维链上信号框架</strong>：分析筹码集中度、成交量真实度、换手率时段分布、大单占比、资金流向、以及综合信号匹配——判断庄家处于哪个阶段。</p>
+  </div>
+
+  <div class="lp-section">
+    <div class="lp-section-title">Stage Legend</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#4da6ff"></div><span class="legend-name" style="color:#4da6ff">吸筹</span><span class="legend-desc">低位收集筹码</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div><span class="legend-name" style="color:#00ff88">拉升</span><span class="legend-desc">推高价格吸引散户</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffb224"></div><span class="legend-name" style="color:#ffb224">出货</span><span class="legend-desc">高位派发给散户</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff4d6a"></div><span class="legend-name" style="color:#ff4d6a">已跑</span><span class="legend-desc">庄家撤退，散户被套</span></div>
+    </div>
+  </div>
+
+  <div class="lp-foot"><span>Powered by Antseer MCP &middot; v1.0</span></div>
+</aside>
+
+<!-- ════ RIGHT PANEL ════ -->
+<main class="rp">
+
+  <!-- Header -->
+  <div class="rp-header">
+    <h2>Execution Result</h2>
+    <span class="status-badge status-ok" id="rp-status">Completed</span>
+    <span class="rp-meta" id="rp-meta"></span>
+  </div>
+
+  <!-- Hero: Stage Verdict -->
+  <div class="hero" id="hero">
+    <div class="stage-ring">
+      <svg viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="52"/>
+        <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+      </svg>
+      <div class="stage-center">
+        <div class="stage-name" id="stage-name"></div>
+        <div class="stage-conf" id="stage-conf"></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-en" id="hero-en"></div>
+      <div class="hero-signals">Signal Match: <b id="hero-sig"></b></div>
+      <div class="pipeline" id="pipeline"></div>
+      <div class="hero-advice" id="hero-advice"></div>
+    </div>
+  </div>
+
+  <!-- KPI Bar -->
+  <div class="kpi-bar" id="kpi-bar"></div>
+
+  <!-- 6 Indicator Cards -->
+  <div class="ind-grid">
+
+    <!-- #1 Chip Concentration -->
+    <div class="card">
+      <div class="card-h"><span class="card-num">#1</span><span class="card-title">筹码集中度</span><span class="card-badge" id="b1"></span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:140px"><canvas id="c1"></canvas></div><div class="stats" id="s1"></div></div>
+      <div class="edu">
+        <div class="edu-block"><div class="edu-label">&#128208; 怎么算</div><div class="edu-text">获取 Top 50 持有地址 → 查询链上关联钱包 → 将同一控制人的钱包合并为"实体" → 重新计算每个实体的真实持仓比例。</div></div>
+        <div class="edu-block meaning"><div class="edu-label">&#128161; 结果含义</div><div class="edu-text" id="e1"></div></div>
+      </div>
+    </div>
+
+    <!-- #2 Volume Authenticity -->
+    <div class="card">
+      <div class="card-h"><span class="card-num">#2</span><span class="card-title">成交量真实度</span><span class="card-badge" id="b2"></span></div>
+      <div class="card-body"><div class="gauge-c"><svg class="gauge-svg" viewBox="0 0 200 115" id="gauge-svg"></svg></div><div class="stats" id="s2"></div></div>
+      <div class="edu">
+        <div class="edu-block"><div class="edu-label">&#128208; 怎么算</div><div class="edu-text">24h 成交量 ÷ Holder 总数 = 每人平均交易额（Vol/Holder），再与同类市值代币的中位数做对比，计算倍数。</div></div>
+        <div class="edu-block meaning"><div class="edu-label">&#128161; 结果含义</div><div class="edu-text" id="e2"></div></div>
+      </div>
+    </div>
+
+    <!-- #3 Turnover -->
+    <div class="card">
+      <div class="card-h"><span class="card-num">#3</span><span class="card-title">换手率 & 时段分析</span><span class="card-badge" id="b3"></span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:140px"><canvas id="c3"></canvas></div><div class="stats" id="s3"></div></div>
+      <div class="edu">
+        <div class="edu-block"><div class="edu-label">&#128208; 怎么算</div><div class="edu-text">换手率 = 24h 交易量 ÷ 市值。将所有 DEX 交易按小时分桶，计算每小时成交量。超过均值 3 倍的时段标记为"异常尖峰"。</div></div>
+        <div class="edu-block meaning"><div class="edu-label">&#128161; 结果含义</div><div class="edu-text" id="e3"></div></div>
+      </div>
+    </div>
+
+    <!-- #4 Large Order -->
+    <div class="card">
+      <div class="card-h"><span class="card-num">#4</span><span class="card-title">大单占比</span><span class="card-badge" id="b4"></span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:130px;display:flex;align-items:center;justify-content:center"><div style="position:relative;width:130px;height:130px"><canvas id="c4"></canvas><div class="donut-center"><div class="dv" id="gini-v"></div><div class="dl">Gini</div></div></div></div><div class="dist" id="dist-t"></div></div>
+      <div class="edu">
+        <div class="edu-block"><div class="edu-label">&#128208; 怎么算</div><div class="edu-text">把所有交易按金额从大到小排序，计算最大的 10% 交易占总成交量的比例。再用基尼系数（0-1）衡量交易额的集中程度。</div></div>
+        <div class="edu-block meaning"><div class="edu-label">&#128161; 结果含义</div><div class="edu-text" id="e4"></div></div>
+      </div>
+    </div>
+
+    <!-- #5 Fund Flow -->
+    <div class="card">
+      <div class="card-h"><span class="card-num">#5</span><span class="card-title">资金流向</span><span class="card-badge" id="b5"></span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:130px"><canvas id="c5"></canvas></div><div class="stats" id="s5"></div></div>
+      <div class="edu">
+        <div class="edu-block"><div class="edu-label">&#128208; 怎么算</div><div class="edu-text">将链上参与者分为三类：Smart Money（聪明钱/专业机构）、大户（鲸鱼）、散户。分别统计各类的买入和卖出总金额。</div></div>
+        <div class="edu-block meaning"><div class="edu-label">&#128161; 结果含义</div><div class="edu-text" id="e5"></div></div>
+      </div>
+    </div>
+
+    <!-- #6 Comprehensive Verdict -->
+    <div class="card">
+      <div class="card-h"><span class="card-num">#6</span><span class="card-title">综合阶段判断</span><span class="card-badge" id="b6"></span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:160px"><canvas id="c6"></canvas></div><ul class="sig-list" id="sig-list"></ul></div>
+      <div class="edu">
+        <div class="edu-block"><div class="edu-label">&#128208; 怎么算</div><div class="edu-text">将前 5 个指标各自打分（0~1），绘制雷达图展示六维强度。然后将得分模式与四个阶段的典型信号特征对比，匹配度最高的阶段即为最终判断。</div></div>
+        <div class="edu-block meaning"><div class="edu-label">&#128161; 结果含义</div><div class="edu-text" id="e6"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom: Risk + Explain -->
+  <div class="bot-row">
+    <div class="panel">
+      <h3>&#9888;&#65039; 风险信号</h3>
+      <div id="risk-list"></div>
+    </div>
+    <div class="panel" id="explain-panel">
+      <h3>&#128218; 阶段解读</h3>
+    </div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</main>
+</div>
+
+<!-- ════ DATA ════ -->
+<script>
+window.__DATA__={
+  meta:{token_name:"WALK",symbol:"WALK",chain:"BSC",contract_address:"0x9234e981e395dA3BE7b00B035163571698f8f756",generated_at:"2026-04-09T16:00:00Z",time_range:"7d"},
+  kpi:{price:0.00123,price_change_24h:-5.2,mcap:1600000,volume_24h:450000,holders:2340},
+  chip:{score:78,entities:[
+    {entity:"PancakeSwap LP V3",pct:57,suspicious:false},
+    {entity:"Vault (youcanshortit)",pct:40,suspicious:true},
+    {entity:"PancakeSwap LP V2",pct:3,suspicious:false}
+  ],threshold:10,verdict:"高度集中"},
+  vol:{vol_per_holder:192.3,threshold:2000,peer_median:85,anomaly:true,ratio:2.26,verdict:"疑似刷量"},
+  turnover:{rate:0.281,hourly:[
+    {h:0,v:12000,a:false},{h:1,v:8500,a:false},{h:2,v:6200,a:false},{h:3,v:5100,a:false},
+    {h:4,v:7800,a:false},{h:5,v:9200,a:false},{h:6,v:14500,a:false},{h:7,v:18200,a:false},
+    {h:8,v:22000,a:false},{h:9,v:25600,a:false},{h:10,v:19800,a:false},{h:11,v:16400,a:false},
+    {h:12,v:21000,a:false},{h:13,v:28500,a:false},{h:14,v:95000,a:true},{h:15,v:72000,a:true},
+    {h:16,v:31000,a:false},{h:17,v:18500,a:false},{h:18,v:14200,a:false},{h:19,v:11800,a:false},
+    {h:20,v:9500,a:false},{h:21,v:7200,a:false},{h:22,v:5800,a:false},{h:23,v:4200,a:false}
+  ],anomaly_hours:[14,15],mean:18750},
+  large:{top10_pct:68.5,gini:0.72,buckets:[
+    {label:"<$100",count:1200,pct:8.5},{label:"$100-1K",count:450,pct:12},
+    {label:"$1K-10K",count:85,pct:11},{label:">$10K",count:15,pct:68.5}
+  ],verdict:"少数地址驱动"},
+  flow:{sm_buy:125000,sm_sell:45000,whale_buy:280000,whale_sell:310000,retail_buy:95000,retail_sell:180000},
+  verdict:{stage:"出货",confidence:72,matched:4,total:6,
+    dims:{chip:0.8,vol:0.6,turnover:0.7,large_order:0.85,sm_exit:0.65,holder_diverge:0.9},
+    signals:[
+      {name:"Holder 增长但价格不涨",hit:true,val:"+22% / -5.2%"},
+      {name:"大户持仓占比下降",hit:true,val:"-8.5%"},
+      {name:"Smart Money 净卖出",hit:false,val:"净买入 $80K"},
+      {name:"换手率升高价格不涨",hit:true,val:"28.1% / -5.2%"},
+      {name:"大单占比 > 60%",hit:true,val:"68.5%"},
+      {name:"成交量集中时段",hit:false,val:"2h 异常"}
+    ]},
+  risks:[
+    {sev:"high",text:"筹码集中度 78 — 40% 代币集中在单一 Vault 合约中"},
+    {sev:"high",text:"Holder 增长 22% 但价格跌 5.2% — 筹码正在从大户派发给散户"},
+    {sev:"medium",text:"Vol/Holder $192（同类中位数 $85）— 成交量偏高，存在刷量嫌疑"},
+    {sev:"medium",text:"14:00-15:00 UTC 成交量飙升至均值 4-5 倍 — 疑似集中操作时段"},
+    {sev:"low",text:"LP 锁定状态未知 — 需通过 DEXScreener 等外部工具验证"}
+  ],
+  explain:{
+    desc:"庄家正在将集中持有的筹码逐步转移给散户。价格横盘甚至下跌，但 Holder 数量持续增长，说明筹码在从少数大户流向大量散户。",
+    risk:"高风险阶段。此时追涨极其危险 — 你买入的每一笔筹码，大概率来自正在减仓的大户。",
+    action:"不要追涨买入。如果已持仓，考虑分批减仓止损。等待出货完成、价格充分回调后再重新评估。"
+  }
+};
+</script>
+
+<!-- ════ RENDER ════ -->
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+const D=window.__DATA__;
+const STAGES={
+  '吸筹':{color:'#4da6ff',dim:'rgba(77,166,255,.12)',en:'ACCUMULATING'},
+  '拉升':{color:'#00ff88',dim:'rgba(0,255,136,.12)',en:'PUMPING'},
+  '出货':{color:'#ffb224',dim:'rgba(255,178,36,.12)',en:'DISTRIBUTING'},
+  '已跑':{color:'#ff4d6a',dim:'rgba(255,77,106,.12)',en:'DUMPED'}
+};
+const sc=STAGES[D.verdict.stage];
+const fmt=n=>n>=1e6?'$'+(n/1e6).toFixed(2)+'M':n>=1e3?'$'+(n/1e3).toFixed(1)+'K':'$'+n.toFixed(2);
+const fk=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n+'';
+
+// ── Left panel prefill ──
+document.getElementById('f-symbol').value=D.meta.contract_address;
+document.getElementById('f-chain').value=D.meta.chain.toLowerCase();
+document.getElementById('f-range').value=D.meta.time_range;
+
+// ── Right header ──
+document.getElementById('rp-meta').textContent=D.meta.symbol+' | '+D.meta.chain+' | '+D.meta.time_range+' | '+new Date(D.meta.generated_at).toLocaleDateString('zh-CN');
+
+// ── Hero ──
+const hero=document.getElementById('hero');
+hero.style.borderTop='3px solid '+sc.color;
+document.getElementById('stage-name').textContent=D.verdict.stage;
+document.getElementById('stage-name').style.color=sc.color;
+document.getElementById('stage-conf').textContent=D.verdict.confidence+'%';
+document.getElementById('hero-en').textContent=sc.en;
+document.getElementById('hero-en').style.color=sc.color;
+document.getElementById('hero-sig').textContent=D.verdict.matched+' / '+D.verdict.total;
+document.getElementById('hero-sig').style.color=sc.color;
+
+// Ring
+const ring=document.getElementById('ring-fg');
+ring.style.stroke=sc.color;
+const circ=2*Math.PI*52;
+ring.setAttribute('stroke-dasharray',circ);
+setTimeout(()=>{ring.setAttribute('stroke-dashoffset',circ*(1-D.verdict.confidence/100))},100);
+
+// Pipeline
+const stageList=['吸筹','拉升','出货','已跑'];
+const curIdx=stageList.indexOf(D.verdict.stage);
+const pip=document.getElementById('pipeline');
+stageList.forEach((s,i)=>{
+  const si=STAGES[s];
+  if(i>0) pip.innerHTML+='<div class="pip-seg" style="'+(i<=curIdx?'background:'+STAGES[stageList[i-1]].color:'')+'"></div>';
+  let cls=i<curIdx?'passed':i===curIdx?'active':'future';
+  let dotStyle=i===curIdx?'border-color:'+si.color+';background:'+si.color+';color:#fff;box-shadow:0 0 16px '+si.color+'55':i<curIdx?'border-color:'+si.color+';background:'+si.dim+';color:'+si.color:'';
+  let lblStyle=i<=curIdx?'color:'+si.color:'';
+  pip.innerHTML+='<div class="pip-step '+cls+'"><div class="pip-dot" style="'+dotStyle+'">'+s[0]+'</div><div class="pip-lbl" style="'+lblStyle+'">'+s+'</div></div>';
+});
+
+// Advice
+const adv=document.getElementById('hero-advice');
+const isRisky=['出货','已跑'].includes(D.verdict.stage);
+adv.style.background=isRisky?'rgba(255,77,106,.08)':'rgba(0,255,136,.08)';
+adv.style.color=isRisky?'var(--red)':'var(--neon)';
+adv.style.borderLeft='3px solid '+(isRisky?'var(--red)':'var(--neon)');
+adv.textContent=D.explain.action;
+
+// ── KPI ──
+const turnPct=(D.turnover.rate*100).toFixed(1)+'%';
+const kpis=[
+  {l:'Price',v:'$'+D.kpi.price.toFixed(6)},
+  {l:'Market Cap',v:fmt(D.kpi.mcap)},
+  {l:'24H Change',v:(D.kpi.price_change_24h>0?'+':'')+D.kpi.price_change_24h.toFixed(1)+'%',c:D.kpi.price_change_24h>=0?'up':'dn'},
+  {l:'24H Volume',v:fmt(D.kpi.volume_24h)},
+  {l:'Holders',v:D.kpi.holders.toLocaleString()},
+  {l:'Turnover',v:turnPct}
+];
+const kb=document.getElementById('kpi-bar');
+kpis.forEach(k=>{
+  const d=document.createElement('div');d.className='kpi';
+  d.innerHTML='<div class="kl">'+k.l+'</div><div class="kv"'+(k.c?' style="color:var(--'+(k.c==='up'?'neon':'red')+')"':'')+'>'+k.v+'</div>';
+  kb.appendChild(d);
+});
+
+// ── Chart defaults ──
+Chart.defaults.color='#8b8fa4';
+Chart.defaults.borderColor='rgba(255,255,255,.05)';
+Chart.defaults.font.family="'Inter','Noto Sans SC',sans-serif";
+Chart.defaults.font.size=10;
+Chart.defaults.plugins.legend.display=false;
+Chart.defaults.plugins.tooltip.backgroundColor='#1c1e2a';
+Chart.defaults.plugins.tooltip.borderColor='rgba(124,92,252,.2)';
+Chart.defaults.plugins.tooltip.borderWidth=1;
+Chart.defaults.plugins.tooltip.cornerRadius=6;
+Chart.defaults.plugins.tooltip.padding=8;
+
+// ── #1 Chip ──
+const b1=document.getElementById('b1');b1.textContent=D.chip.verdict;b1.className='card-badge '+(D.chip.score>70?'badge-danger':D.chip.score>40?'badge-warn':'badge-ok');
+new Chart(document.getElementById('c1'),{type:'bar',data:{
+  labels:D.chip.entities.map(e=>e.entity.length>18?e.entity.slice(0,16)+'..':e.entity),
+  datasets:[{data:D.chip.entities.map(e=>e.pct),backgroundColor:D.chip.entities.map(e=>e.suspicious?'rgba(255,77,106,.5)':'rgba(0,212,170,.4)'),borderColor:D.chip.entities.map(e=>e.suspicious?'#ff4d6a':'#00d4aa'),borderWidth:1,borderRadius:3,barThickness:18}]
+},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>c.parsed.x.toFixed(1)+'%'}}}}});
+document.getElementById('s1').innerHTML='<div class="stat"><span class="sl">集中度</span><span class="sv" style="color:'+(D.chip.score>70?'var(--red)':'var(--amber)')+'">'+D.chip.score+'/100</span></div><div class="stat"><span class="sl">阈值</span><span class="sv">'+D.chip.threshold+'%</span></div>';
+document.getElementById('e1').textContent=D.chip.score+'/100: 少数实体控制了大量筹码。>70 属于高度集中，意味着庄家对代币价格有很强的控制力，随时可能砸盘。';
+
+// ── #2 Gauge ──
+const vd=D.vol;
+const b2=document.getElementById('b2');b2.textContent=vd.verdict;b2.className='card-badge '+(vd.anomaly?'badge-warn':'badge-ok');
+const gs=document.getElementById('gauge-svg');
+const mx=Math.max(vd.threshold*1.5,vd.vol_per_holder*1.3);
+const pA=(vd.peer_median/mx)*180,vA=Math.min((vd.vol_per_holder/mx)*180,178),tA=(vd.threshold/mx)*180;
+function arc(cx,cy,r,s,e){const sr=(s-180)*Math.PI/180,er=(e-180)*Math.PI/180;return'M '+(cx+r*Math.cos(sr))+' '+(cy+r*Math.sin(sr))+' A '+r+' '+r+' 0 '+(e-s>180?1:0)+' 1 '+(cx+r*Math.cos(er))+' '+(cy+r*Math.sin(er))}
+const gcx=100,gcy=100,gr=72;
+const na=(vA-180)*Math.PI/180;
+gs.innerHTML='<path d="'+arc(gcx,gcy,gr,0,pA)+'" fill="none" stroke="rgba(0,212,170,.3)" stroke-width="12" stroke-linecap="round"/>'
++'<path d="'+arc(gcx,gcy,gr,pA,tA)+'" fill="none" stroke="rgba(255,178,36,.3)" stroke-width="12" stroke-linecap="round"/>'
++'<path d="'+arc(gcx,gcy,gr,tA,180)+'" fill="none" stroke="rgba(255,77,106,.3)" stroke-width="12" stroke-linecap="round"/>'
++'<line x1="'+gcx+'" y1="'+gcy+'" x2="'+(gcx+(gr-4)*Math.cos(na))+'" y2="'+(gcy+(gr-4)*Math.sin(na))+'" stroke="'+(vd.anomaly?'#ffb224':'#00d4aa')+'" stroke-width="2.5" stroke-linecap="round"/>'
++'<circle cx="'+gcx+'" cy="'+gcy+'" r="4" fill="var(--s3)" stroke="var(--t2)" stroke-width="1"/>'
++'<text x="'+gcx+'" y="'+(gcy-20)+'" fill="'+(vd.anomaly?'#ffb224':'#00d4aa')+'" font-size="22" font-weight="700" text-anchor="middle" font-family="Space Grotesk,sans-serif">$'+vd.vol_per_holder.toFixed(0)+'</text>'
++'<text x="'+gcx+'" y="'+(gcy-4)+'" fill="#5c6078" font-size="9" text-anchor="middle" font-family="JetBrains Mono,monospace">Vol / Holder</text>';
+document.getElementById('s2').innerHTML='<div class="stat"><span class="sl">同类中位数</span><span class="sv">$'+vd.peer_median+'</span></div><div class="stat"><span class="sl">阈值</span><span class="sv">$'+vd.threshold.toLocaleString()+'</span></div><div class="stat"><span class="sl">倍数</span><span class="sv" style="color:var(--amber)">'+vd.ratio.toFixed(1)+'x</span></div>';
+document.getElementById('e2').textContent='$'+vd.vol_per_holder.toFixed(0)+' vs 同类 $'+vd.peer_median+'（'+vd.ratio.toFixed(1)+' 倍）= 每个持有人的平均成交额偏高，可能存在庄家自买自卖的刷量行为。正常代币倍数应 <1.5x。';
+
+// ── #3 Turnover ──
+const td=D.turnover;
+const b3=document.getElementById('b3');b3.textContent=(td.rate*100).toFixed(1)+'%';b3.className='card-badge '+(td.anomaly_hours.length?'badge-warn':'badge-ok');
+new Chart(document.getElementById('c3'),{type:'bar',data:{
+  labels:td.hourly.map(h=>h.h+':00'),
+  datasets:[{data:td.hourly.map(h=>h.v),backgroundColor:td.hourly.map(h=>h.a?'rgba(255,77,106,.5)':'rgba(124,92,252,.35)'),borderColor:td.hourly.map(h=>h.a?'#ff4d6a':'rgba(124,92,252,.6)'),borderWidth:1,borderRadius:2}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{callback:v=>fk(v)}}},plugins:{tooltip:{callbacks:{label:c=>fmt(c.parsed.y)}}}},
+plugins:[{id:'ml',afterDraw(ch){const y=ch.scales.y.getPixelForValue(td.mean);const c=ch.ctx;c.save();c.setLineDash([3,3]);c.strokeStyle='rgba(255,178,36,.35)';c.lineWidth=1;c.beginPath();c.moveTo(ch.chartArea.left,y);c.lineTo(ch.chartArea.right,y);c.stroke();c.restore()}}]});
+document.getElementById('s3').innerHTML='<div class="stat"><span class="sl">换手率</span><span class="sv">'+(td.rate*100).toFixed(1)+'%</span></div><div class="stat"><span class="sl">异常时段</span><span class="sv" style="color:var(--red)">'+(td.anomaly_hours.length?td.anomaly_hours.map(h=>h+':00').join(', '):'无')+'</span></div>';
+document.getElementById('e3').textContent=(td.rate*100).toFixed(1)+'% 换手率 + '+td.anomaly_hours.length+' 个异常时段: 14:00-15:00 成交量飙升至均值的 4-5 倍，不是自然交易分布，说明有人在特定时段集中操作。红色柱为异常时段，虚线为均值。';
+
+// ── #4 Doughnut ──
+const ld=D.large;
+const b4=document.getElementById('b4');b4.textContent=ld.verdict;b4.className='card-badge '+(ld.top10_pct>60?'badge-danger':'badge-warn');
+document.getElementById('gini-v').textContent=ld.gini.toFixed(2);
+new Chart(document.getElementById('c4'),{type:'doughnut',data:{labels:['Top 10%','其余 90%'],datasets:[{data:[ld.top10_pct,100-ld.top10_pct],backgroundColor:['rgba(255,77,106,.5)','rgba(255,255,255,.05)'],borderColor:['#ff4d6a','rgba(255,255,255,.08)'],borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{tooltip:{callbacks:{label:c=>c.label+': '+c.parsed.toFixed(1)+'%'}}}}});
+const dt=document.getElementById('dist-t');
+ld.buckets.forEach(b=>{const c=b.pct>50?'var(--red)':b.pct>20?'var(--amber)':'var(--cyan)';dt.innerHTML+='<div class="dist-row"><span class="dl">'+b.label+'</span><div class="db"><div class="df" style="width:'+b.pct+'%;background:'+c+'"></div></div><span class="dp">'+b.pct+'%</span></div>'});
+document.getElementById('e4').textContent='Top 10% 占比 '+ld.top10_pct+'% + 基尼系数 '+ld.gini.toFixed(2)+': 少数大额交易（>$10K 仅 '+ld.buckets[3].count+' 笔）贡献了 '+ld.top10_pct+'% 的成交量。基尼 >0.6 说明市场高度不均衡，被少数"大手"主导。';
+
+// ── #5 Flow ──
+const ff=D.flow;const smN=ff.sm_buy-ff.sm_sell;
+const b5=document.getElementById('b5');b5.textContent=smN>0?'SM 净买入':'SM 净卖出';b5.className='card-badge '+(smN>0?'badge-ok':'badge-danger');
+new Chart(document.getElementById('c5'),{type:'bar',data:{
+  labels:['Smart Money','大户','散户'],
+  datasets:[{label:'买入',data:[ff.sm_buy,ff.whale_buy,ff.retail_buy],backgroundColor:'rgba(0,212,170,.4)',borderColor:'#00d4aa',borderWidth:1,borderRadius:3},
+  {label:'卖出',data:[-ff.sm_sell,-ff.whale_sell,-ff.retail_sell],backgroundColor:'rgba(255,77,106,.4)',borderColor:'#ff4d6a',borderWidth:1,borderRadius:3}]
+},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,grid:{color:'rgba(255,255,255,.03)'},ticks:{callback:v=>v<0?fk(-v):fk(v)}},y:{stacked:true,grid:{display:false}}},plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:8,padding:8,font:{size:9,family:"'JetBrains Mono',monospace"}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(Math.abs(c.parsed.x))}}}}});
+document.getElementById('s5').innerHTML='<div class="stat"><span class="sl">SM 净流</span><span class="sv" style="color:'+(smN>0?'var(--neon)':'var(--red)')+'">'+(smN>0?'+':'')+fmt(smN)+'</span></div><div class="stat"><span class="sl">大户净流</span><span class="sv" style="color:'+(ff.whale_buy-ff.whale_sell>0?'var(--neon)':'var(--red)')+'">'+fmt(ff.whale_buy-ff.whale_sell)+'</span></div>';
+document.getElementById('e5').textContent='Smart Money 净买入 '+fmt(smN)+'，但散户净卖出 '+fmt(ff.retail_sell-ff.retail_buy)+'。信号矛盾: 聪明钱在小额买入但大户在微亏卖出。需要结合其他指标综合判断——单看资金流向不能下结论。';
+
+// ── #6 Radar ──
+const sv=D.verdict;const dims=sv.dims;
+const b6=document.getElementById('b6');b6.textContent=sv.stage;b6.style.background=sc.dim;b6.style.color=sc.color;b6.className='card-badge';
+new Chart(document.getElementById('c6'),{type:'radar',data:{
+  labels:['筹码集中','量能真实','换手异常','大单主导','SM 退出','持仓背离'],
+  datasets:[{data:[dims.chip,dims.vol,dims.turnover,dims.large_order,dims.sm_exit,dims.holder_diverge],borderColor:sc.color,backgroundColor:sc.dim,borderWidth:1.5,pointBackgroundColor:sc.color,pointRadius:3}]
+},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:1,grid:{color:'rgba(255,255,255,.04)'},angleLines:{color:'rgba(255,255,255,.04)'},pointLabels:{font:{size:9},color:'#8b8fa4'},ticks:{display:false}}}}});
+const sl=document.getElementById('sig-list');
+sv.signals.forEach(s=>{sl.innerHTML+='<li><span class="sig-chk '+(s.hit?'chk-hit':'chk-miss')+'">'+(s.hit?'\u2713':'\u2717')+'</span><span>'+s.name+'</span><span class="sig-val">'+s.val+'</span></li>'});
+document.getElementById('e6').textContent='判定为"'+sv.stage+'"阶段，置信度 '+sv.confidence+'%（'+sv.matched+'/'+sv.total+' 信号命中）。核心特征: Holder 涨 22% 但价格跌 5.2% → 筹码正在从大户流向散户，这是出货阶段的典型标志。';
+
+// ── Risks ──
+const rl=document.getElementById('risk-list');
+D.risks.forEach(r=>{rl.innerHTML+='<div class="risk-item"><span class="risk-sev sev-'+r.sev+'">'+r.sev+'</span><span class="risk-text">'+r.text+'</span></div>'});
+
+// ── Explain ──
+const ep=document.getElementById('explain-panel');
+ep.innerHTML+='<div class="explain-block"><div class="eb-title">当前含义</div><div class="eb-content">'+D.explain.desc+'</div></div>';
+ep.innerHTML+='<div class="explain-block eb-risk"><div class="eb-title">风险程度</div><div class="eb-content">'+D.explain.risk+'</div></div>';
+ep.innerHTML+='<div class="explain-block eb-action"><div class="eb-title">操作建议</div><div class="eb-content">'+D.explain.action+'</div></div>';
+
+// ── Footer ──
+document.getElementById('foot').textContent='基于 @agintender 6 维信号框架 | Antseer MCP 链上数据 | '+new Date(D.meta.generated_at).toLocaleString('zh-CN')+' | 不构成投资建议';
+});
+</script>
+</body>
+</html>

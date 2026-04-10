@@ -215,56 +215,66 @@ MCP: ant_token_analytics → query_type: who_bought_sold
 
 ## 输出
 
-生成两个输出:
+结论先行，证据跟上。全文控制在一屏内可扫完。
 
-### 1. 聊天摘要
+---
 
-在聊天中输出简洁的分析结论:
+### 输出格式
+
+#### 1. 结论区（必须放最前面）
 
 ```
-代币: {symbol} | 链: {chain} | 市值: {mcap}
-当前阶段: {stage} ({en}) | 置信度: {confidence}%
-信号命中: {matched}/{total}
-
-关键发现:
-- {risk_signal_1}
-- {risk_signal_2}
-- {risk_signal_3}
-
-建议: {action_suggestion}
-
-完整报告已生成: output/mm-report-{symbol}.html
+{stage_emoji} {symbol} | {chain} | 市值 ${mcap} | FDV ${fdv}
+阶段: {stage_cn} ({stage_en}) | 置信度 {confidence}% ({matched}/{total})
+建议: {一句话操作建议}
 ```
 
-### 2. HTML 可视化报告
+stage_emoji: 吸筹=🟡 拉升=🔴 出货=🟠 已跑=⚫
 
-读取本 skill 目录下的 `references/report-template.html` 模板，将计算结果填入 `window.__DATA__` JSON 对象，写入 `output/mm-report-{symbol}.html`。
+#### 2. 风险信号（按严重度排列，每条附数据依据）
 
-`window.__DATA__` 结构:
-
-```json
-{
-  "meta": { "token_name", "symbol", "chain", "contract_address", "generated_at", "time_range" },
-  "kpi": { "price", "price_change_24h", "mcap", "volume_24h", "holders" },
-  "chip_concentration": { "score", "entities[]", "threshold", "verdict" },
-  "volume_authenticity": { "vol_per_holder", "threshold", "peer_median", "is_anomaly", "ratio_vs_peer", "verdict" },
-  "turnover": { "turnover_rate", "hourly_volumes[]", "anomaly_hours[]", "mean_hourly" },
-  "large_order_ratio": { "top10_pct", "gini", "distribution_buckets[]", "verdict" },
-  "fund_flow": { "smart_money_buy/sell", "whale_buy/sell", "retail_buy/sell" },
-  "stage_verdict": { "stage", "confidence", "signals_matched", "total_signals", "signal_dimensions", "all_signals[]" },
-  "risk_signals": [{ "severity", "text" }],
-  "stage_explanation": { "description", "retail_implication", "action_suggestion" }
-}
+```markdown
+| 🔴 HIGH | {信号} — {具体数字/地址证据} |
+| 🟡 MED  | {信号} — {证据} |
 ```
 
-## 阶段解读文本
+不超过 6 条。每条必须有数据，禁止空泛描述。
 
-根据判定的阶段，使用以下模板生成解读:
+#### 3. 筹码分布（Top Holders 表格）
 
-- **吸筹**: "庄家正在低位悄悄收集筹码。价格横盘但大户持仓在增加。此阶段风险相对较低，但不代表一定会拉升。"
-- **拉升**: "庄家正在拉升价格。少数地址驱动交易量，筹码并未大量散出。如果你已经持仓，注意设好止盈；如果没有持仓，追高风险较大。"
-- **出货**: "庄家正在将筹码派发给散户。价格横盘但 Holder 增长，说明大户在出货。此阶段对散户极为危险，不建议买入。"
-- **已跑**: "庄家已基本出完货。价格下跌但散户被套不割肉。此阶段介入需要极大勇气和充分的理由。"
+```markdown
+| # | 地址 | 占比 | 24h 变动 | 备注 |
+```
+
+只列 Top 5-10，附一行 "Top N 合计: X%"。
+关联钱包发现紧跟表格下方，用 bullet 说明关联类型和合并持仓。
+
+#### 4. 资金流向（一张表）
+
+```markdown
+| 群体 | 净流向 | 方向 |
+```
+
+列 Fresh Wallets / Smart Trader / Whale / Exchange，异常项用 1 句话点评。
+
+#### 5. 信号匹配明细
+
+```
+✅ {命中信号}: {证据}
+❌ {未命中}: {原因}
+```
+
+#### 6. 阶段解读（1-2 句收尾）
+
+根据阶段选用模板，可根据实际数据补充 1 句额外警告:
+
+- **吸筹**: "庄家正在低位收集筹码。价格横盘但大户持仓增加，风险相对较低但不代表一定拉升。"
+- **拉升**: "庄家正在拉升价格。少数地址驱动交易量，筹码未大量散出。已持仓注意止盈，未持仓追高风险大。"
+- **出货**: "庄家正在派发筹码给散户。价格横盘但 Holder 增长，此阶段对散户极危险，不建议买入。"
+- **已跑**: "庄家已基本出完货。价格下跌散户被套，介入需要极大勇气和充分理由。"
+
+末尾固定一行:
+> 免责声明: 本分析仅供参考，不构成投资建议。关联钱包识别可能有漏报，请自行做好风险管理。
 
 ## 降级处理
 
