@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polymarket 存活策略评估器</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090d;--bg2:#0f1117;--s1:#161821;--s2:#1c1e2a;--s3:#252736;
+  --border:rgba(124,92,252,0.12);--border-h:rgba(124,92,252,0.25);
+  --text:#e8eaf0;--t2:#8b8fa4;--t3:#5c6078;
+  --neon:#00ff88;--neon-dim:rgba(0,255,136,0.1);--neon-b:rgba(0,255,136,0.2);
+  --purple:#7c5cfc;--purple-dim:rgba(124,92,252,0.12);--purple-b:rgba(124,92,252,0.25);
+  --red:#ff4d6a;--red-dim:rgba(255,77,106,0.1);
+  --amber:#ffb224;--amber-dim:rgba(255,178,36,0.1);
+  --cyan:#00d4aa;--cyan-dim:rgba(0,212,170,0.1);
+  --heading:'Space Grotesk','Noto Sans SC',sans-serif;
+  --body:'Inter','Noto Sans SC',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --left-w:340px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-width:thin;scrollbar-color:var(--s3) transparent}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(124,92,252,0.3)}
+.shell{display:grid;grid-template-columns:var(--left-w) 1fr;min-height:100vh}
+
+/* ── Left Panel ── */
+.lp{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.lp-head{padding:24px 22px 18px;border-bottom:1px solid var(--border)}
+.lp-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4d8dff,var(--purple));display:grid;place-items:center;font-size:17px;font-weight:800;color:#fff;margin-bottom:12px}
+.lp-title{font-family:var(--heading);font-size:17px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.lp-sub{font-size:11px;color:var(--t2);line-height:1.6}
+.lp-section{padding:16px 22px;border-bottom:1px solid var(--border)}
+.lp-section-title{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:12px}
+.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--neon);margin-bottom:4px}
+.field label .req{color:var(--red);margin-left:2px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:12px;font-family:var(--body);border-radius:8px;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus{border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,92,252,0.2)}
+.field select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6078'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-exec{width:100%;padding:12px;background:linear-gradient(135deg,var(--neon),#00cc6e);color:#08090d;font-family:var(--heading);font-size:13px;font-weight:700;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-exec:hover{opacity:.9}
+.lp-info{padding:16px 22px;border-bottom:1px solid var(--border)}
+.lp-info p{font-size:11px;color:var(--t2);line-height:1.7}
+.lp-info strong{color:var(--text);font-weight:600}
+.death-list{margin-top:8px}
+.death-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:10px;color:var(--t2)}
+.death-item .dr{font-family:var(--mono);font-weight:700;min-width:40px;text-align:right}
+.lp-foot{margin-top:auto;padding:14px 22px;border-top:1px solid var(--border);text-align:center}
+.lp-foot span{font-family:var(--mono);font-size:9px;color:var(--t3)}
+
+/* ── Right Panel ── */
+.rp{overflow-y:auto;height:100vh;padding:0;background:var(--bg)}
+
+/* Backtest ticker */
+.bt-ticker{background:var(--s1);border-bottom:1px solid var(--border);padding:0;overflow:hidden;white-space:nowrap;position:relative}
+.bt-ticker::before,.bt-ticker::after{content:'';position:absolute;top:0;bottom:0;width:40px;z-index:2;pointer-events:none}
+.bt-ticker::before{left:0;background:linear-gradient(90deg,var(--s1),transparent)}
+.bt-ticker::after{right:0;background:linear-gradient(-90deg,var(--s1),transparent)}
+.bt-track{display:inline-flex;animation:scroll 40s linear infinite;gap:0}
+.bt-track:hover{animation-play-state:paused}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.bt-item{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-right:1px solid var(--border);flex-shrink:0}
+.bt-item .bt-mkt{font-size:11px;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.bt-item .bt-strat{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px}
+.bt-item .bt-pnl{font-family:var(--mono);font-size:12px;font-weight:700}
+
+.rp-inner{padding:20px 24px 40px}
+
+/* Header */
+.rp-header{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.ticker{font-family:var(--heading);font-size:15px;font-weight:700}
+.vb{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.3px}
+.vb-safe{background:var(--neon-dim);border:1px solid var(--neon-b);color:var(--neon)}
+.vb-caution{background:var(--amber-dim);border:1px solid rgba(255,178,36,.25);color:var(--amber)}
+.vb-danger{background:var(--red-dim);border:1px solid rgba(255,77,106,.25);color:var(--red)}
+.rp-meta{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3);text-align:right}
+.stag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:5px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:14px}
+.stag-ins{background:var(--neon-dim);border:1px solid var(--neon-b);color:var(--neon)}
+
+/* Chart + OB row */
+.chart-row{display:grid;grid-template-columns:1fr 260px;gap:12px;margin-bottom:14px}
+.chart-box{background:var(--s2);border-radius:10px;padding:12px;position:relative}
+.chart-box canvas{width:100%;display:block}
+.chart-lbl{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.ob{background:var(--s2);border-radius:10px;padding:12px}
+.ob-title{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.ob-row{display:flex;align-items:center;margin-bottom:3px;height:22px;position:relative}
+.ob-bar{height:100%;border-radius:3px;position:absolute;top:0}
+.ob-bar.bid{right:50%;background:rgba(0,255,136,.1);border-right:1px solid rgba(0,255,136,.25)}
+.ob-bar.ask{left:50%;background:rgba(255,77,106,.1);border-left:1px solid rgba(255,77,106,.25)}
+.ob-val{position:relative;z-index:1;width:50%;font-family:var(--mono);font-size:10px;font-weight:500;padding:0 6px}
+.ob-val.bid{text-align:right;color:var(--neon)}.ob-val.ask{text-align:left;color:var(--red)}
+.ob-mid{display:flex;justify-content:center;align-items:center;gap:6px;padding:6px 0;margin:4px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.ob-ratio{font-family:var(--mono);font-size:11px;font-weight:700}
+.ob-ratio-lbl{font-size:10px;color:var(--t3)}
+.ls-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:8px}
+.ls-bar .long{background:var(--neon)}.ls-bar .short{background:var(--red)}
+.ls-info{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;font-weight:600}
+.ls-info .l{color:var(--neon)}.ls-info .s{color:var(--red)}
+
+/* Metrics */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.met{background:var(--s2);border-radius:8px;padding:12px 14px}
+.met-l{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.met-v{font-family:var(--heading);font-size:17px;font-weight:700;letter-spacing:-.3px}
+.met-sub{font-size:10px;color:var(--t3);margin-top:2px}
+
+/* EV bar */
+.ev-c{margin-bottom:14px}
+.ev-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ev-lbl{font-size:11px;font-weight:600;color:var(--t2)}
+.ev-val{font-family:var(--mono);font-size:12px;font-weight:700}
+.ev-bar{height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.ev-fill{height:100%;border-radius:3px}
+
+/* Checklist */
+.chk{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
+.chk-i{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:500;color:var(--t2);padding:7px 10px;border-radius:7px;background:var(--s2)}
+.ci{font-size:13px;flex-shrink:0}
+.ci-p{color:var(--neon)}.ci-f{color:var(--red)}
+
+/* Kelly */
+.kelly{background:var(--s2);border-radius:9px;padding:14px;margin-bottom:14px}
+.kelly-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.kelly-t{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.4px}
+.kelly-a{font-family:var(--heading);font-size:16px;font-weight:700}
+.kelly-bar{height:7px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden;position:relative;margin-bottom:6px}
+.kelly-fill{height:100%;border-radius:4px}
+.kelly-lim{position:absolute;top:-2px;height:11px;width:2px;background:var(--amber);border-radius:1px}
+.kelly-d{display:flex;justify-content:space-between;font-size:10px;color:var(--t3)}
+
+/* Recommendation footer */
+.rec-ft{padding:14px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:16px}
+.rec-ft-txt{font-size:12px;color:var(--t2);line-height:1.6;flex:1}
+.rec-btn{padding:9px 18px;border-radius:9px;font-family:var(--heading);font-size:12px;font-weight:700;border:none;cursor:pointer;letter-spacing:.2px;flex-shrink:0}
+.rec-btn.safe{background:var(--neon);color:#000}
+
+/* Tooltip */
+.tip-wrap{position:relative;display:inline-flex}
+.tip-btn{width:18px;height:18px;border-radius:50%;background:var(--purple-dim);border:1px solid var(--purple-b);color:var(--purple);font-family:var(--heading);font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.tip-btn:hover{background:var(--purple);color:#fff;transform:scale(1.1)}
+.tip-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--s1);border:1px solid var(--purple-b);border-radius:10px;padding:12px 14px;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+.tip-pop::before{content:'';position:absolute;top:-6px;right:7px;width:12px;height:12px;background:var(--s1);border-left:1px solid var(--purple-b);border-top:1px solid var(--purple-b);transform:rotate(45deg)}
+.tip-wrap:hover .tip-pop{display:block}
+.tip-wrap:hover .tip-btn{background:var(--purple);color:#fff}
+.tp-title{font-family:var(--heading);font-size:12px;font-weight:600;margin-bottom:6px}
+.tp-row{padding:5px 10px;border-left:2px solid var(--purple);background:var(--s2);border-radius:0 6px 6px 0;margin-bottom:5px;font-size:10px;color:var(--t2);line-height:1.6}
+.tp-row.m{border-left-color:var(--cyan)}
+
+/* Disclaimer */
+.disclaimer{margin-bottom:16px;padding:12px 16px;background:var(--amber-dim);border:1px solid rgba(255,178,36,0.2);border-radius:10px;font-size:11px;color:var(--amber);line-height:1.7}
+.foot{text-align:center;padding:14px;font-family:var(--mono);font-size:9px;color:var(--t3);border-top:1px solid var(--border)}
+
+@media(max-width:960px){.shell{grid-template-columns:1fr}.lp{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}.rp{height:auto}}
+@media(max-width:640px){.chart-row{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.chk{grid-template-columns:1fr}.rp-inner{padding:14px 12px 30px}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════ LEFT PANEL ════ -->
+<aside class="lp">
+  <div class="lp-head">
+    <div class="lp-icon">P</div>
+    <div class="lp-title">Polymarket 存活策略评估器</div>
+    <div class="lp-sub">基于 10,000 次蒙特卡洛模拟。97% 交易者亏损超 80% 本金，仅 3 类策略历史存活。</div>
+  </div>
+  <div class="lp-section">
+    <div class="lp-section-title">Parameters</div>
+    <div class="field"><label>Strategy Type<span class="req">*</span></label>
+      <select><option value="insurance" selected>Insurance Model (保险模型)</option><option value="sports_quant">Sports/Event Quant</option><option value="bayesian_arb">Bayesian Event Arb</option><option value="custom">Custom</option></select>
+    </div>
+    <div class="field"><label>Market Question<span class="req">*</span></label>
+      <input type="text" value="Will BTC exceed $250K before 2027?" spellcheck="false">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>YES Price<span class="req">*</span></label><input value="0.039" style="font-family:var(--mono)"></div>
+      <div class="field"><label>True Prob<span class="req">*</span></label><input value="0.02" style="font-family:var(--mono)"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Bankroll ($)</label><input value="10,000" style="font-family:var(--mono)"></div>
+      <div class="field"><label>Kelly Fraction</label><input value="0.25" style="font-family:var(--mono)"></div>
+    </div>
+    <div class="field"><label>Market Type</label>
+      <select><option value="crypto" selected>Crypto</option><option value="politics">Politics</option><option value="sports">Sports</option><option value="macro">Macro</option></select>
+    </div>
+    <button class="btn-exec"><span>&#9654;</span> Execute Skill</button>
+  </div>
+  <div class="lp-info">
+    <div class="lp-section-title">Death Patterns</div>
+    <p>以下策略类型在蒙特卡洛模拟中<strong>几乎全军覆没</strong>：</p>
+    <div class="death-list">
+      <div class="death-item"><span class="dr" style="color:var(--red)">94.2%</span><span>动量交易 — LMSR 机制立即吸收优势</span></div>
+      <div class="death-item"><span class="dr" style="color:var(--red)">91.7%</span><span>新闻/直觉驱动 — 公开信息已定价</span></div>
+      <div class="death-item"><span class="dr" style="color:var(--red)">88.3%</span><span>抄作业 — 入场延迟导致优势归零</span></div>
+      <div class="death-item"><span class="dr" style="color:var(--amber)">79.1%</span><span>纯价差套利 — 滑点侵蚀利润</span></div>
+    </div>
+  </div>
+  <div class="lp-info">
+    <div class="lp-section-title">Survival Strategies</div>
+    <div class="death-list">
+      <div class="death-item"><span class="dr" style="color:var(--neon)">71.4%</span><span>保险模型 — 买 NO @ 88-98¢ 收取风险溢价</span></div>
+      <div class="death-item"><span class="dr" style="color:var(--neon)">68.9%</span><span>体育/事件量化 — 气象+疲劳+历史分布</span></div>
+      <div class="death-item"><span class="dr" style="color:var(--cyan)">64.2%</span><span>贝叶斯事件套利 — 3-5分钟信息窗口</span></div>
+    </div>
+  </div>
+  <div class="lp-foot"><span>@NFTCPS Monte Carlo &middot; 10K Sims</span></div>
+</aside>
+
+<!-- ════ RIGHT PANEL ════ -->
+<main class="rp">
+
+<!-- Backtest Ticker -->
+<div class="bt-ticker">
+<div class="bt-track" id="bt-track"></div>
+</div>
+
+<div class="rp-inner">
+  <!-- Header -->
+  <div class="rp-header">
+    <span class="ticker">&#8383; BTC 能否在 2027 年前突破 $250,000？</span>
+    <span class="vb vb-safe">&#10003; 可以交易</span>
+    <span class="rp-meta">保险模型 &middot; 买入 NO @ 96.1¢<br>$4.69M 交易量 &middot; 2027-01-01 到期</span>
+  </div>
+
+  <div class="stag stag-ins">&#9730; Insurance Model &middot; Buy NO @ 96.1¢ &middot; 28.6% 死亡率</div>
+
+  <!-- Chart + Orderbook -->
+  <div class="chart-row">
+    <div class="chart-box">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="chart-lbl">BTC/USDT 4H K-Line</div>
+        <div class="tip-wrap"><button class="tip-btn">?</button><div class="tip-pop"><div class="tp-title">K 线 & 盘口</div><div class="tp-row">绿色蜡烛 = 收涨，红色 = 收跌。黄线 = MA20 均线。K 线反映 BTC 现货价格走势，用于判断市场趋势方向。</div><div class="tp-row m">盘口深度显示合约买卖挂单量。买盘强 = 多头信心足；卖盘强 = 空头压力大。多空比反映市场方向倾向。</div></div></div>
+      </div>
+      <canvas id="chart1" height="200"></canvas>
+    </div>
+    <div class="ob">
+      <div class="ob-title">合约挂单深度</div>
+      <div id="ob1"></div>
+      <div class="ob-mid">
+        <span class="ob-ratio" style="color:var(--neon)" id="ob1-bid-pct"></span>
+        <span class="ob-ratio-lbl">买 / 卖</span>
+        <span class="ob-ratio" style="color:var(--red)" id="ob1-ask-pct"></span>
+      </div>
+      <div style="margin-top:8px">
+        <div class="chart-lbl">多空比</div>
+        <div class="ls-bar"><div class="long" id="ls1-long"></div><div class="short" id="ls1-short"></div></div>
+        <div class="ls-info"><span class="l" id="ls1-l-txt"></span><span class="s" id="ls1-s-txt"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics with single ? -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <span style="font-family:var(--heading);font-size:13px;font-weight:600">Core Metrics</span>
+    <div class="tip-wrap"><button class="tip-btn">?</button><div class="tip-pop" style="width:320px"><div class="tp-title">指标解释</div><div class="tp-row"><b>YES Price</b> — Polymarket 上"是"的价格（0-1），代表市场隐含概率。3.9¢ = 市场认为 3.9% 概率发生。</div><div class="tp-row"><b>True Prob</b> — 你自己估算的真实概率。与市场价差越大 = Edge 越大。</div><div class="tp-row"><b>EV (期望值)</b> — 每 $1 投入的预期收益。公式：P×(1/价格-1)-(1-P)。正值 = 值得下注。</div><div class="tp-row m"><b>Edge</b> — 你的真实概率 vs 市场隐含概率的差值。正 Edge = 你比市场更准。</div></div></div>
+  </div>
+  <div class="metrics">
+    <div class="met"><div class="met-l">Market YES Price</div><div class="met-v">3.9¢</div><div class="met-sub">NO = 96.1¢</div></div>
+    <div class="met"><div class="met-l">True Prob (YES)</div><div class="met-v">2.0%</div><div class="met-sub">P(NO) = 98.0%</div></div>
+    <div class="met"><div class="met-l">Expected Value</div><div class="met-v" style="color:var(--neon)">+0.0197</div><div class="met-sub">正期望 &#10003;</div></div>
+    <div class="met"><div class="met-l">Edge</div><div class="met-v" style="color:var(--neon)">+1.9%</div><div class="met-sub">P(NO) − NO Price</div></div>
+  </div>
+
+  <div class="ev-c">
+    <div class="ev-h"><span class="ev-lbl">EV Strength</span><span class="ev-val" style="color:var(--neon)">+1.97%</span></div>
+    <div class="ev-bar"><div class="ev-fill" style="width:39%;background:var(--neon)"></div></div>
+  </div>
+
+  <!-- 4-Condition Check with ? -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <span style="font-family:var(--heading);font-size:13px;font-weight:600">Four-Condition Survival Check</span>
+    <div class="tip-wrap"><button class="tip-btn">?</button><div class="tip-pop"><div class="tp-title">四条件验证</div><div class="tp-row"><b>正期望值</b> — EV > 0 才值得下注。EV ≤ 0 = 长期必亏。</div><div class="tp-row"><b>Kelly 仓位</b> — 用 Kelly 公式控制仓位大小，防止单笔亏太多。1/4 Kelly 更保守。</div><div class="tp-row"><b>模型驱动</b> — 需要有量化模型支撑，不能靠"我觉得"。</div><div class="tp-row m"><b>结构性优势</b> — 你有别人没有的信息/能力（专有数据、自动化系统等）。</div></div></div>
+  </div>
+  <div class="chk">
+    <div class="chk-i"><span class="ci ci-p">&#10003;</span>正期望值 (EV = 0.0197)</div>
+    <div class="chk-i"><span class="ci ci-p">&#10003;</span>Kelly 仓位管理 (1/4 Kelly)</div>
+    <div class="chk-i"><span class="ci ci-p">&#10003;</span>模型驱动（尾部风险定价）</div>
+    <div class="chk-i"><span class="ci ci-p">&#10003;</span>结构性优势（风险溢价收取）</div>
+  </div>
+
+  <!-- Kelly with ? -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <span style="font-family:var(--heading);font-size:13px;font-weight:600">Kelly Position Sizing</span>
+    <div class="tip-wrap"><button class="tip-btn">?</button><div class="tip-pop"><div class="tp-title">Kelly 公式</div><div class="tp-row"><b>Full Kelly</b> = (p×b − (1−p)) / b，其中 p = 真实概率，b = 赔率。数学最优但波动大。</div><div class="tp-row"><b>1/4 Kelly</b> — 只下 Full Kelly 的 25%，大幅降低破产风险。保险模型推荐 1/4 Kelly。</div><div class="tp-row m"><b>上限 5%</b> — 单笔不超过总资金 5%。即使 Kelly 算出更多，也卡在 5% 防止爆仓。</div></div></div>
+  </div>
+  <div class="kelly">
+    <div class="kelly-h"><span class="kelly-t">Kelly &middot; $10,000 bankroll</span><span class="kelly-a" style="color:var(--neon)">$49.80</span></div>
+    <div class="kelly-bar"><div class="kelly-fill" style="width:9.96%;background:var(--neon)"></div><div class="kelly-lim" style="left:50%"></div></div>
+    <div class="kelly-d"><span>Full Kelly: 1.99% &middot; 1/4 Kelly: 0.498%</span><span>Max: 5% ($500)</span></div>
+  </div>
+
+  <!-- Recommendation -->
+  <div class="rec-ft">
+    <div class="rec-ft-txt">保险模型：以 96.1¢ 买入 NO。Edge = +1.9%。低风险溢价收取策略。需 100+ 笔交易实现统计优势。BTC 当前 $68,287 — 距 $250K 需上涨 ~266%。综合评级：<strong>4/4 条件通过。</strong></div>
+    <button class="rec-btn safe">&#10003; ALL CLEAR</button>
+  </div>
+
+  <div class="disclaimer"><strong>Risk Warning:</strong> 基于 @NFTCPS 蒙特卡洛模拟。历史存活率不代表未来收益。EV/Kelly 计算质量取决于你的概率估算准确度。保险模型需 100+ 笔交易实现统计优势，单笔无意义。不构成投资建议。</div>
+  <div class="foot">@NFTCPS Monte Carlo 10K Sims &middot; Polymarket Survival Strategy Evaluator &middot; 2026-04-10</div>
+</div>
+</main>
+</div>
+
+<script>
+// ═══ Backtest ticker data — profitable insurance model trades ═══
+const backtestTrades=[
+  {mkt:"BTC $500K by 2028?",strat:"Insurance",side:"NO@97.2¢",pnl:"+2.8%",win:true},
+  {mkt:"ETH Flippening by 2027?",strat:"Insurance",side:"NO@94.5¢",pnl:"+5.5%",win:true},
+  {mkt:"SOL $1000 by 2027?",strat:"Insurance",side:"NO@96.8¢",pnl:"+3.2%",win:true},
+  {mkt:"DOGE $1 by 2027?",strat:"Insurance",side:"NO@98.1¢",pnl:"+1.9%",win:true},
+  {mkt:"BTC $150K by Q2 2026?",strat:"Insurance",side:"NO@88.4¢",pnl:"+11.6%",win:true},
+  {mkt:"ETH $10K by 2027?",strat:"Insurance",side:"NO@93.2¢",pnl:"+6.8%",win:true},
+  {mkt:"XRP $5 by 2027?",strat:"Insurance",side:"NO@97.6¢",pnl:"+2.4%",win:true},
+  {mkt:"BTC $100K by Q1 2026?",strat:"Insurance",side:"NO@62.0¢",pnl:"-38%",win:false},
+  {mkt:"ADA $5 by 2027?",strat:"Insurance",side:"NO@98.3¢",pnl:"+1.7%",win:true},
+  {mkt:"BNB $1000 by 2027?",strat:"Insurance",side:"NO@95.1¢",pnl:"+4.9%",win:true},
+  {mkt:"AVAX $200 by 2027?",strat:"Insurance",side:"NO@97.0¢",pnl:"+3.0%",win:true},
+  {mkt:"ETH $5K by Q3 2026?",strat:"Insurance",side:"NO@91.8¢",pnl:"+8.2%",win:true},
+  {mkt:"BTC $200K by 2026?",strat:"Insurance",side:"NO@95.5¢",pnl:"+4.5%",win:true},
+  {mkt:"MATIC $3 by 2027?",strat:"Insurance",side:"NO@98.7¢",pnl:"+1.3%",win:true},
+];
+// Render ticker
+const track=document.getElementById('bt-track');
+let html='';
+const items=backtestTrades.concat(backtestTrades); // duplicate for seamless loop
+items.forEach(t=>{
+  const color=t.win?'var(--neon)':'var(--red)';
+  const stratBg=t.win?'var(--neon-dim)':'var(--red-dim)';
+  html+=`<div class="bt-item"><span class="bt-mkt">${t.mkt}</span><span class="bt-strat" style="background:${stratBg};color:${color}">${t.strat}</span><span class="bt-pnl" style="color:${color}">${t.pnl}</span></div>`;
+});
+track.innerHTML=html;
+
+// ═══ Chart Data (from existing) ═══
+const btcKlines=[[1774972800000,66736.79,68589.49,66729.28,67838.80],[1774987200000,67838.79,68410.30,67831.70,68284.48],[1775001600000,68284.49,68378.64,67578.75,68170.67],[1775016000000,68170.67,69310.00,68005.33,68692.00],[1775030400000,68692.00,68851.35,68389.21,68712.52],[1775044800000,68712.52,68965.00,67918.83,68918.52],[1775059200000,68918.52,69171.77,67939.28,68176.84],[1775073600000,68176.84,68534.00,67964.48,68113.92],[1775088000000,68113.92,68653.38,66500.00,66576.25],[1775102400000,66576.25,66961.26,66217.07,66930.79],[1775116800000,66930.79,66930.79,66167.10,66220.28],[1775131200000,66220.28,67104.86,65712.12,66852.91],[1775145600000,66852.91,67430.99,66596.80,66975.99],[1775160000000,66976.00,67100.00,66731.08,66901.99],[1775174400000,66901.99,67000.00,66282.00,66579.97],[1775188800000,66579.98,67247.38,66416.68,67042.08],[1775203200000,67042.08,67288.00,66674.72,67017.44],[1775217600000,67017.43,67370.42,66508.10,66827.15],[1775232000000,66827.15,67069.00,66751.86,66885.74],[1775246400000,66885.73,66970.18,66826.13,66964.30],[1775260800000,66964.29,66968.28,66814.00,66832.18],[1775275200000,66832.18,67052.99,66775.91,67014.96],[1775289600000,67014.95,67232.72,66918.00,67156.93],[1775304000000,67156.93,67562.93,67029.07,67383.66],[1775318400000,67383.66,67543.60,67265.00,67288.42],[1775332800000,67288.42,67504.54,67186.62,67300.42],[1775347200000,67300.42,67307.28,66955.72,67145.98],[1775361600000,67145.98,67188.51,66611.66,66820.64],[1775376000000,66820.64,67150.00,66819.42,66999.00],[1775390400000,66998.99,67856.16,66680.57,67306.64],[1775404800000,67306.65,67560.45,67173.40,67361.01],[1775419200000,67361.01,69136.20,67332.66,69034.18],[1775433600000,69034.18,69588.00,68776.61,69123.69],[1775448000000,69123.69,69354.26,68806.53,69115.91],[1775462400000,69115.91,70283.32,69081.88,69614.91],[1775476800000,69614.91,69973.25,69163.86,69968.87],[1775491200000,69968.87,70351.46,69282.02,69739.53],[1775505600000,69739.52,69974.08,68300.00,68853.66],[1775520000000,68853.66,69128.20,68273.34,68779.21],[1775534400000,68779.20,68981.83,68443.00,68624.61],[1775548800000,68624.60,69247.90,68071.96,68345.75],[1775563200000,68345.75,68633.87,68080.00,68256.67]];
+const btcOB=[[669.75,513.08],[586.67,537.89],[610.15,499.24],[445.28,374.89],[593.23,427.13],[549.48,495.98],[597.60,568.47],[517.47,493.53],[435.65,452.79],[396.03,438.54],[377.46,465.28],[318.52,386.38],[445.02,635.60],[464.64,575.72],[462.09,580.11],[629.77,643.41],[618.47,570.25],[569.70,623.63],[652.17,601.77],[637.63,693.69]];
+const btcLS={long:56.60,short:43.40};
+
+// ═══ Draw Candlestick ═══
+function drawChart(id,data){
+  const canvas=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const W=rect.width-24,H=200;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  const last=data.slice(-30);
+  const maxP=Math.max(...last.map(d=>d[2]));
+  const minP=Math.min(...last.map(d=>d[3]));
+  const range=maxP-minP||1;
+  const pad=16,chartH=H-pad*2,barW=(W-pad)/last.length;
+  ctx.strokeStyle='rgba(124,92,252,.06)';ctx.lineWidth=1;
+  for(let i=0;i<5;i++){const y=pad+(chartH/4)*i;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  ctx.fillStyle='#5c6078';ctx.font='9px Inter';ctx.textAlign='right';
+  for(let i=0;i<5;i++){ctx.fillText((maxP-(range/4)*i).toFixed(0),W-2,pad+(chartH/4)*i-3)}
+  last.forEach((d,i)=>{
+    const[,o,h,l,c]=d;const x=i*barW+barW/2;const bull=c>=o;
+    const color=bull?'#00ff88':'#ff4d6a';const colorA=bull?'rgba(0,255,136,.25)':'rgba(255,77,106,.25)';
+    const yH=pad+((maxP-h)/range)*chartH,yL=pad+((maxP-l)/range)*chartH;
+    const yO=pad+((maxP-o)/range)*chartH,yC=pad+((maxP-c)/range)*chartH;
+    ctx.strokeStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,yH);ctx.lineTo(x,yL);ctx.stroke();
+    const bw=barW*.6;ctx.fillStyle=bull?colorA:color;ctx.strokeStyle=color;
+    ctx.fillRect(x-bw/2,Math.min(yO,yC),bw,Math.max(Math.abs(yO-yC),1));
+    ctx.strokeRect(x-bw/2,Math.min(yO,yC),bw,Math.max(Math.abs(yO-yC),1));
+  });
+  if(last.length>=20){ctx.beginPath();ctx.strokeStyle='rgba(255,178,36,.5)';ctx.lineWidth=1.5;
+    for(let i=19;i<last.length;i++){let s=0;for(let j=i-19;j<=i;j++)s+=last[j][4];const ma=s/20;
+      const x=i*barW+barW/2,y=pad+((maxP-ma)/range)*chartH;i===19?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}
+}
+
+// ═══ Render OB ═══
+function renderOB(id,data,bidId,askId){
+  const el=document.getElementById(id);const recent=data.slice(-8);
+  const mx=Math.max(...recent.flatMap(d=>[d[0],d[1]]));
+  let tB=0,tA=0;recent.forEach(d=>{tB+=d[0];tA+=d[1]});
+  document.getElementById(bidId).textContent=(tB/(tB+tA)*100).toFixed(1)+'%';
+  document.getElementById(askId).textContent=(tA/(tB+tA)*100).toFixed(1)+'%';
+  let h='';recent.forEach(d=>{
+    h+=`<div class="ob-row"><div class="ob-bar bid" style="width:${(d[0]/mx*48).toFixed(1)}%"></div><div class="ob-bar ask" style="width:${(d[1]/mx*48).toFixed(1)}%"></div><div class="ob-val bid">${d[0].toFixed(0)}M</div><div class="ob-val ask">${d[1].toFixed(0)}M</div></div>`;
+  });el.innerHTML=h;
+}
+
+// ═══ Render LS ═══
+function renderLS(id,data){
+  document.getElementById(id+'-long').style.width=data.long+'%';
+  document.getElementById(id+'-short').style.width=data.short+'%';
+  document.getElementById(id+'-l-txt').textContent='多 '+data.long+'%';
+  document.getElementById(id+'-s-txt').textContent='空 '+data.short+'%';
+}
+
+// ═══ Init ═══
+window.addEventListener('load',()=>{drawChart('chart1',btcKlines);renderOB('ob1',btcOB,'ob1-bid-pct','ob1-ask-pct');renderLS('ls1',btcLS)});
+window.addEventListener('resize',()=>{drawChart('chart1',btcKlines)});
+</script>
+</body>
+</html>
