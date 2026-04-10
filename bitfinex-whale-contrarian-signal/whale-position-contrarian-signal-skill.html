@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>巨鲸仓位反向信号 | Whale Position Contrarian Signal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root {
+  --bg:#08090d; --bg2:#0f1117;
+  --s1:#161821; --s2:#1c1e2a; --s3:#252736;
+  --border:rgba(124,92,252,0.12); --border-h:rgba(124,92,252,0.25);
+  --text:#e8eaf0; --t2:#8b8fa4; --t3:#5c6078;
+  --neon:#00ff88; --neon-dim:rgba(0,255,136,0.1); --neon-b:rgba(0,255,136,0.2);
+  --purple:#7c5cfc; --purple-dim:rgba(124,92,252,0.12); --purple-b:rgba(124,92,252,0.25);
+  --red:#ff4d6a; --red-dim:rgba(255,77,106,0.12);
+  --amber:#ffb224; --amber-dim:rgba(255,178,36,0.12);
+  --cyan:#00d4aa; --cyan-dim:rgba(0,212,170,0.1);
+  --heading:'Space Grotesk','Noto Sans SC',sans-serif;
+  --body:'Inter','Noto Sans SC',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --left-w:340px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-width:thin;scrollbar-color:var(--s3) transparent}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(124,92,252,0.3)}
+
+.shell{display:grid;grid-template-columns:var(--left-w) 1fr;min-height:100vh}
+
+/* ── Left Panel ── */
+.lp{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.lp-head{padding:28px 22px 20px;border-bottom:1px solid var(--border)}
+.lp-icon{width:40px;height:40px;border-radius:50%;background:var(--red-dim);border:1.5px solid rgba(255,77,106,0.25);display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:var(--red);font-size:18px}
+.lp-title{font-family:var(--heading);font-size:17px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px}
+.lp-sub{font-size:11px;color:var(--t2);line-height:1.6}
+.lp-section{padding:18px 22px;border-bottom:1px solid var(--border)}
+.lp-section-title{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:14px}
+.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--neon);margin-bottom:4px}
+.field label .req{color:var(--red);margin-left:2px}
+.field input,.field select{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:12px;font-family:var(--body);border-radius:8px;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus{border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,92,252,0.2)}
+.field select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6078'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.field input::placeholder{color:var(--t3)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-exec{width:100%;padding:12px;background:linear-gradient(135deg,var(--neon),#00cc6e);color:#08090d;font-family:var(--heading);font-size:13px;font-weight:700;border:none;border-radius:8px;cursor:pointer;letter-spacing:0.3px;transition:opacity .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-exec:hover{opacity:.9}.btn-exec:active{transform:scale(.98)}
+.lp-info{padding:18px 22px;border-bottom:1px solid var(--border)}
+.lp-info p{font-size:11px;color:var(--t2);line-height:1.7}
+.lp-info strong{color:var(--text);font-weight:600}
+.legend{display:flex;flex-direction:column;gap:7px;margin-top:2px}
+.legend-item{display:flex;align-items:center;gap:8px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-name{font-size:11px;font-weight:600;min-width:70px}
+.legend-desc{font-size:10px;color:var(--t3)}
+.lp-foot{margin-top:auto;padding:14px 22px;border-top:1px solid var(--border);text-align:center}
+.lp-foot span{font-family:var(--mono);font-size:9px;color:var(--t3)}
+
+/* ── Right Panel ── */
+.rp{overflow-y:auto;height:100vh;padding:20px 24px 40px;background:var(--bg)}
+
+.rp-header{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.ticker{font-family:var(--heading);font-size:22px;font-weight:800;color:#fff}
+.price{font-family:var(--heading);font-size:18px;font-weight:600}
+.price-chg{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:4px}
+.price-up{color:var(--neon);background:var(--neon-dim)}.price-dn{color:var(--red);background:var(--red-dim)}
+.signal-badge{font-family:var(--heading);font-size:13px;font-weight:700;padding:5px 14px;border-radius:6px;display:flex;align-items:center;gap:6px;letter-spacing:0.3px}
+.sig-neutral{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,178,36,0.25)}
+.sig-short{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,0.25)}
+.sig-long{background:var(--neon-dim);color:var(--neon);border:1px solid var(--neon-b)}
+.rp-meta{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--t3);text-align:right}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 2s ease-in-out infinite}
+
+/* ── Chart Card ── */
+.chart-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:16px;position:relative}
+.chart-card .card-title{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin:4px 8px 8px;font-weight:600}
+.chart-legend{position:absolute;top:10px;right:14px;z-index:10;display:flex;gap:14px;font-size:10px}
+.chart-legend .li{display:flex;align-items:center;gap:4px;color:var(--t2)}
+.chart-legend .ld{width:8px;height:8px;border-radius:50%}
+#priceChart{width:100%;height:400px}
+#oiChart{width:100%;height:150px}
+
+/* ── Signal Hover Card (K-line overlay) ── */
+.sig-card{display:none;position:absolute;z-index:300;width:280px;background:var(--s1);border:1px solid var(--red);border-radius:10px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.7);pointer-events:none}
+.sig-card.long-card{border-color:var(--neon)}
+.sig-card-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)}
+.sig-card-head .sc-icon{font-size:14px}
+.sig-card-head .sc-title{font-family:var(--heading);font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+.sig-card-head .sc-badge{font-family:var(--heading);font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px}
+.sig-card-body{padding:10px 14px}
+.sig-card-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sig-card-row:last-child{border-bottom:none}
+.sig-card-row .scr-label{font-size:11px;color:var(--t2)}
+.sig-card-row .scr-val{font-family:var(--mono);font-size:13px;font-weight:700}
+.sig-card-row .scr-note{font-size:9px;color:var(--t3);margin-left:4px;font-family:var(--mono)}
+.sig-card-foot{padding:8px 14px;background:var(--s2);text-align:center}
+.sig-card-foot .scf-val{font-family:var(--mono);font-size:20px;font-weight:800}
+.sig-card-foot .scf-lbl{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase}
+
+/* ── Signal Section ── */
+.signal-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color .2s}
+.card:hover{border-color:var(--border-h)}
+.card-title{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3);margin-bottom:10px;font-weight:600}
+.signal-dir{font-family:var(--heading);font-size:32px;font-weight:800;letter-spacing:-1px}
+.signal-strength{font-family:var(--heading);font-size:14px;font-weight:700;padding:4px 14px;border-radius:6px;display:inline-block;margin-top:6px}
+.signal-detail{font-size:11px;color:var(--t2);margin-top:8px;line-height:1.6}
+
+/* Gauge */
+.gauge-c{text-align:center;padding:6px 0}
+.gauge-val{font-family:var(--heading);font-size:34px;font-weight:800}
+.gauge-lbl{font-size:11px;color:var(--t2);margin-top:4px}
+.gauge-bar{width:100%;height:6px;background:var(--s3);border-radius:3px;margin-top:14px;position:relative;overflow:visible}
+.gauge-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.gauge-mk{position:absolute;top:-6px;width:2px;height:18px;background:#fff;transform:translateX(-50%)}
+.gauge-mk-lbl{position:absolute;top:-22px;transform:translateX(-50%);font-family:var(--mono);font-size:8px;color:var(--t3);white-space:nowrap}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;padding:7px 8px;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);border-bottom:1px solid var(--border);font-weight:600}
+.data-table td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.03);font-size:12px}
+.v-up{color:var(--neon)}.v-dn{color:var(--red)}.v-m{color:var(--t2)}
+
+/* ── Backtest + Entry ── */
+.bot-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.bt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bt-label{width:70px;font-family:var(--mono);font-size:10px;color:var(--t2);text-align:right;flex-shrink:0}
+.bt-bar-bg{flex:1;height:22px;background:var(--s3);border-radius:4px;overflow:hidden}
+.bt-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:#fff;transition:width 1s ease}
+.bt-val{width:55px;font-family:var(--mono);font-size:11px;font-weight:600;text-align:right;flex-shrink:0}
+
+
+/* Signal strength matrix */
+.level-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.level-row:last-child{border-bottom:none}
+.level-label{font-size:11px;color:var(--t2)}
+.level-tag{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700;letter-spacing:.5px}
+
+/* ── Tooltip ── */
+.tip-wrap{position:relative;display:inline-flex}
+.tip-btn{width:20px;height:20px;border-radius:50%;background:var(--purple-dim);border:1px solid var(--purple-b);color:var(--purple);font-family:var(--heading);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.tip-btn:hover{background:var(--purple);color:#fff;transform:scale(1.1)}
+.tip-pop{display:none;position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--s1);border:1px solid var(--purple-b);border-radius:10px;padding:14px 16px;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px rgba(124,92,252,0.15)}
+.tip-pop::before{content:'';position:absolute;top:-6px;right:8px;width:12px;height:12px;background:var(--s1);border-left:1px solid var(--purple-b);border-top:1px solid var(--purple-b);transform:rotate(45deg)}
+.tip-wrap:hover .tip-pop{display:block}
+.tip-wrap:hover .tip-btn{background:var(--purple);color:#fff}
+.tip-pop .tp-title{font-family:var(--heading);font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.tip-pop .tp-row{padding:6px 10px;border-left:2px solid var(--purple);background:var(--s2);border-radius:0 6px 6px 0;margin-bottom:6px}
+.tip-pop .tp-row.meaning{border-left-color:var(--cyan)}
+.tip-pop .tp-lbl{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:1px}
+.tip-pop .tp-txt{font-size:11px;color:var(--t2);line-height:1.6}
+
+/* ── Disclaimer ── */
+.disclaimer{margin-bottom:16px;padding:14px 16px;background:var(--amber-dim);border:1px solid rgba(255,178,36,0.2);border-radius:10px;font-size:11px;color:var(--amber);line-height:1.7}
+.foot{text-align:center;padding:14px;font-family:var(--mono);font-size:9px;color:var(--t3);border-top:1px solid var(--border);letter-spacing:.3px}
+
+/* ── Responsive ── */
+@media(max-width:960px){
+  .shell{grid-template-columns:1fr}
+  .lp{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}
+  .rp{height:auto}
+}
+@media(max-width:640px){
+  .signal-row{grid-template-columns:1fr}
+  .bot-row{grid-template-columns:1fr}
+  .edu-grid{grid-template-columns:1fr}
+  .rp{padding:14px 12px 30px}
+  .rp-header{gap:8px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════ LEFT PANEL ════ -->
+<aside class="lp">
+  <div class="lp-head">
+    <div class="lp-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <div class="lp-title">巨鲸仓位反向信号</div>
+    <div class="lp-sub">监测交易所持仓量极端变化，基于 1838 天历史回测生成反向操作信号。巨鲸大幅加仓时考虑做空，巨鲸出逃时考虑做多。</div>
+  </div>
+
+  <div class="lp-section">
+    <div class="lp-section-title">Parameters</div>
+    <div class="field">
+      <label>Symbol<span class="req">*</span></label>
+      <input type="text" id="f-sym" value="BTC" placeholder="BTC, ETH, SOL..." spellcheck="false">
+    </div>
+    <div class="field">
+      <label>Exchange</label>
+      <select id="f-ex"><option value="binance" selected>Binance</option><option value="okx">OKX</option><option value="bybit">Bybit</option></select>
+    </div>
+    <div class="field">
+      <label>Position Type</label>
+      <select id="f-pt"><option value="futures_oi" selected>Futures OI (Open Interest)</option><option value="long_short_ratio">Long/Short Ratio</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Lookback</label>
+        <select><option value="90">90 Days</option><option value="180" selected>180 Days</option><option value="365">365 Days</option></select>
+      </div>
+      <div class="field">
+        <label>Rolling Window</label>
+        <select><option value="14">14 Days</option><option value="30" selected>30 Days</option><option value="60">60 Days</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Short Threshold</label>
+        <input type="text" value="15%" style="font-family:var(--mono)">
+      </div>
+      <div class="field">
+        <label>Long Threshold</label>
+        <input type="text" value="-10%" style="font-family:var(--mono)">
+      </div>
+    </div>
+    <button class="btn-exec"><span>&#9654;</span> Execute Skill</button>
+  </div>
+
+  <div class="lp-info">
+    <div class="lp-section-title">Methodology</div>
+    <p>"跟鲸鱼"是常见策略，但数据揭示了一个<strong>反直觉的结论</strong>：当巨鲸持仓出现极端变化时，反向操作的胜率更高。基于 @leifuchen 对 <strong>Bitfinex 保证金多头</strong>的 1838 天量化回测。</p>
+  </div>
+
+  <div class="lp-section">
+    <div class="lp-section-title">Chart Legend</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--neon)"></div><span class="legend-name" style="color:var(--neon)">做多信号</span><span class="legend-desc">OI 暴跌 >10%</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span class="legend-name" style="color:var(--red)">做空信号</span><span class="legend-desc">OI 暴涨 >15%</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><span class="legend-name" style="color:var(--cyan)">OI 叠加线</span><span class="legend-desc">持仓量趋势</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div><span class="legend-name" style="color:var(--amber)">接近阈值</span><span class="legend-desc">预警区域</span></div>
+    </div>
+  </div>
+
+  <div class="lp-foot"><span>Powered by Antseer MCP &middot; @leifuchen</span></div>
+</aside>
+
+<!-- ════ RIGHT PANEL ════ -->
+<main class="rp">
+
+  <!-- Header -->
+  <div class="rp-header">
+    <span class="ticker">BTC</span>
+    <span class="price">$68,371</span>
+    <span class="price-chg price-up">+3.7% (30d)</span>
+    <span class="signal-badge sig-neutral pulse"><span style="width:6px;height:6px;border-radius:50%;background:var(--amber)"></span>观望 - 接近做空阈值</span>
+    <span class="rp-meta">2026-04-07 | @leifuchen<br>全网聚合合约 OI</span>
+  </div>
+
+  <!-- K-Line Charts -->
+  <div class="chart-card">
+    <div class="chart-legend">
+      <div class="li"><div class="ld" style="background:var(--neon)"></div>Long Zone</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Short Zone</div>
+      <div class="li"><div class="ld" style="background:var(--cyan)"></div>OI</div>
+    </div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">BTC/USDT K-Line + OI Overlay (180d)<div class="tip-wrap"><button class="tip-btn" >?</button><div class="tip-pop" style="width:340px"><div class="tp-title">&#128208; 如何看这张图</div><div class="tp-row"><div class="tp-lbl">K 线 (蜡烛图)</div><div class="tp-txt">每根蜡烛代表一天。绿色 = 当天收涨；红色 = 收跌。上下影线表示当天最高最低价。</div></div><div class="tp-row"><div class="tp-lbl">青色线 (OI)</div><div class="tp-txt">叠加在 K 线底部的持仓量趋势线。OI 与价格背离时（价格涨但 OI 跌）可能预示反转。</div></div><div class="tp-row meaning"><div class="tp-lbl">箭头标记</div><div class="tp-txt">绿色 ↑ = 历史做多信号（OI 暴跌触发）+ 胜率。红色 ↓ = 做空信号（OI 暴涨触发）+ 胜率。琥珀色 = 当前接近阈值。</div></div></div></div></div>
+    <div id="priceChart"></div>
+    <!-- Hover card: LATEST prediction -->
+    <div class="sig-card" id="sig-card-current" style="width:280px">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--red)">
+        <div style="display:flex;align-items:center;gap:6px"><span style="color:var(--red);font-size:14px">&#128308;</span><span style="font-family:var(--heading);font-size:14px;font-weight:700">BTC 做空信号</span></div>
+      </div>
+      <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;color:var(--t2)">入场区间</span>
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)">68,029 — 68,713</span>
+      </div>
+      <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;color:var(--t2)">止损位</span>
+        <span><span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--red)">70,496</span><span style="font-size:9px;color:var(--t3);margin-left:4px">30d高点×1.015</span></span>
+      </div>
+      <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;color:var(--t2)">止盈位 1</span>
+        <span><span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--neon)">62,868</span><span style="font-size:9px;color:var(--t3);margin-left:4px">近30天波段低点</span></span>
+      </div>
+      <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;color:var(--t2)">止盈位 2</span>
+        <span><span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--cyan)">65,934</span><span style="font-size:9px;color:var(--t3);margin-left:4px">持仓量积累起始价格</span></span>
+      </div>
+      <div style="padding:10px 14px;background:rgba(0,255,136,.06);text-align:center;border-top:1px solid rgba(0,255,136,.12)">
+        <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--neon)">2.59:1</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase">盈亏比</div>
+      </div>
+    </div>
+    <!-- Hover card: HISTORICAL backtest (shared by all old signals) -->
+    <div class="sig-card" id="sig-card-hist-short" style="border-color:var(--red)">
+      <div class="sig-card-head"><div class="sc-title"><span class="sc-icon">&#128308;</span>历史做空信号</div><div class="sc-badge" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.3)">回测</div></div>
+      <div class="sig-card-body">
+        <div class="sig-card-row"><span class="scr-label">回测胜率</span><span class="scr-val" style="color:var(--red)">69%</span><span class="scr-note">23/33 次</span></div>
+        <div class="sig-card-row"><span class="scr-label">平均收益</span><span class="scr-val" style="color:var(--red)">-4.2%</span><span class="scr-note">30d 窗口</span></div>
+      </div>
+      <div class="sig-card-foot" style="border-top:1px solid rgba(255,77,106,.15)"><div class="scf-val" style="color:var(--red)">69%</div><div class="scf-lbl">Win Rate</div></div>
+    </div>
+    <div class="sig-card long-card" id="sig-card-hist-long">
+      <div class="sig-card-head"><div class="sc-title"><span class="sc-icon">&#128994;</span>历史做多信号</div><div class="sc-badge" style="background:var(--neon-dim);color:var(--neon);border:1px solid var(--neon-b)">回测</div></div>
+      <div class="sig-card-body">
+        <div class="sig-card-row"><span class="scr-label">回测胜率</span><span class="scr-val" style="color:var(--neon)">62%</span><span class="scr-note">18/29 次</span></div>
+        <div class="sig-card-row"><span class="scr-label">平均收益</span><span class="scr-val" style="color:var(--neon)">+3.1%</span><span class="scr-note">14d 窗口</span></div>
+      </div>
+      <div class="sig-card-foot" style="border-top:1px solid var(--neon-b)"><div class="scf-val" style="color:var(--neon)">62%</div><div class="scf-lbl">Win Rate</div></div>
+    </div>
+    <div class="card-title" style="margin-top:6px">30-Day OI Rolling Change Rate (%)</div>
+    <div id="oiChart"></div>
+  </div>
+
+  <!-- Current Signal Section — single ? for all explanations -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-family:var(--heading);font-size:14px;font-weight:600">Current Signal &amp; Data</span>
+    <div class="tip-wrap"><button class="tip-btn">?</button><div class="tip-pop" style="width:340px"><div class="tp-title">&#128218; 指标解释</div><div class="tp-row"><div class="tp-lbl">OI (Open Interest)</div><div class="tp-txt">交易所所有未结算合约总量（美元计）。OI 上升 = 新资金涌入；下降 = 资金撤离。</div></div><div class="tp-row"><div class="tp-lbl">30 天滚动变化率</div><div class="tp-txt">(当前OI - 30天前OI) ÷ 30天前OI × 100%。+12.7% 意味着大量新资金涌入合约市场。</div></div><div class="tp-row"><div class="tp-lbl">反向信号逻辑</div><div class="tp-txt">巨鲸加仓 >+15% → 做空（胜率69%）；巨鲸出逃 >-10% → 做多（胜率62%）。极端操作往往在趋势末端。</div></div><div class="tp-row meaning"><div class="tp-lbl">信号强度</div><div class="tp-txt">HIGH = 极端信号 + 胜率>60% + 辅助确认；NEUTRAL = 未触发，无需操作。</div></div></div></div>
+  </div>
+  <div class="signal-row">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title">Current Signal</div>
+      <div class="signal-dir" style="color:var(--amber)">HOLD</div>
+      <div class="signal-strength" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,178,36,.25)">NEUTRAL</div>
+      <div class="signal-detail">OI 30 天变化 <strong style="color:var(--amber)">+12.7%</strong>，距做空阈值 (+15%) 还差 <strong>2.3%</strong>。继续观望。</div>
+    </div>
+    <div class="card">
+      <div class="card-title">OI 30-Day Change Rate</div>
+      <div class="gauge-c">
+        <div class="gauge-val" style="color:var(--amber)">+12.7%</div>
+        <div class="gauge-lbl">距做空阈值 2.3% | 距做多阈值 22.7%</div>
+        <div class="gauge-bar">
+          <div class="gauge-fill" style="width:84.7%;background:linear-gradient(90deg,var(--neon),var(--amber))"></div>
+          <div class="gauge-mk" style="left:0%"><div class="gauge-mk-lbl">-10%</div></div>
+          <div class="gauge-mk" style="left:40%;background:var(--neon)"><div class="gauge-mk-lbl" style="color:var(--neon)">Long</div></div>
+          <div class="gauge-mk" style="left:100%;background:var(--red)"><div class="gauge-mk-lbl" style="color:var(--red)">+15%</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Data Snapshot</div>
+      <table class="data-table">
+        <tr><th>Metric</th><th>30d Ago</th><th>Now</th><th>Change</th></tr>
+        <tr><td>OI (Agg)</td><td>$43.07B</td><td>$48.55B</td><td class="v-up">+12.7%</td></tr>
+        <tr><td>Price</td><td>$65,934</td><td>$68,371</td><td class="v-up">+3.7%</td></tr>
+        <tr><td>OI 60d Ago</td><td colspan="2">$48.19B</td><td class="v-up">+0.7%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Backtest -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">Historical Backtest (1838 Days)<div class="tip-wrap"><button class="tip-btn">?</button><div class="tip-pop" style="width:340px"><div class="tp-title">&#128218; 回测 &amp; 信号强度</div><div class="tp-row"><div class="tp-lbl">回测胜率</div><div class="tp-txt">统计历史所有极端信号触发后 14/30 天内价格是否按预期移动。做空 69% = 每 10 次约 7 次盈利。</div></div><div class="tp-row"><div class="tp-lbl">盈亏比 (R:R)</div><div class="tp-txt">止盈距离 ÷ 止损距离。2.59:1 = 每冒 1 块风险预期赚 2.59 块，>1:2 属于良好。</div></div><div class="tp-row meaning"><div class="tp-lbl">信号强度矩阵</div><div class="tp-txt">HIGH = 极端信号 + 胜率>60% + 辅助指标确认（资金费率/爆仓/储备）。NEUTRAL = 未触发。</div></div></div></div></div>
+    <div class="bot-row" style="margin-bottom:0">
+      <div>
+        <div class="bt-row"><div class="bt-label">Short WR</div><div class="bt-bar-bg"><div class="bt-bar-fill" style="width:69%;background:linear-gradient(90deg,var(--red),#dc2626)">69%</div></div><div class="bt-val v-dn">23/33</div></div>
+        <div class="bt-row"><div class="bt-label">Long WR</div><div class="bt-bar-bg"><div class="bt-bar-fill" style="width:62%;background:linear-gradient(90deg,var(--neon),#16a34a)">62%</div></div><div class="bt-val v-up">18/29</div></div>
+        <div class="bt-row"><div class="bt-label">Avg Short</div><div class="bt-bar-bg"><div class="bt-bar-fill" style="width:42%;background:var(--red)">-4.2%</div></div><div class="bt-val v-m">30d win</div></div>
+        <div class="bt-row"><div class="bt-label">Avg Long</div><div class="bt-bar-bg"><div class="bt-bar-fill" style="width:31%;background:var(--neon)">+3.1%</div></div><div class="bt-val v-m">14d win</div></div>
+      </div>
+      <div>
+        <div class="card-title" style="margin-top:0">Signal Strength Matrix</div>
+        <div class="level-row"><span class="level-label">HIGH</span><span style="font-size:10px;color:var(--t2)">极端信号 + 胜率>60% + 辅助确认</span><span class="level-tag" style="background:var(--red-dim);color:var(--red)">STRONG</span></div>
+        <div class="level-row"><span class="level-label">MEDIUM</span><span style="font-size:10px;color:var(--t2)">极端信号 + 胜率>60%</span><span class="level-tag" style="background:var(--amber-dim);color:var(--amber)">MODERATE</span></div>
+        <div class="level-row"><span class="level-label">LOW</span><span style="font-size:10px;color:var(--t2)">极端信号 + 胜率≤60%</span><span class="level-tag" style="background:rgba(255,255,255,.05);color:var(--t3)">WEAK</span></div>
+        <div class="level-row"><span class="level-label">NEUTRAL</span><span style="font-size:10px;color:var(--t2)">未触发极端信号</span><span class="level-tag" style="background:rgba(255,255,255,.03);color:var(--t3)">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <strong>Risk Warning:</strong> 本分析基于历史回测的统计概率（1838 天, @leifuchen 方法论）。历史胜率 60-70% 意味着仍有 30-40% 的错误信号。默认阈值（做空 +15% / 做多 -10%）基于 BTC 回测校准，其他币种可能需要调整。OI/多空比作为 Bitfinex 保证金多头数据的替代指标。所有输出仅供参考，不构成投资建议。
+  </div>
+
+  <div class="foot">@leifuchen Bitfinex Margin Longs 1838-Day Backtest | Antseer MCP Data | 2026-04-07 | For informational purposes only</div>
+</main>
+</div>
+
+<!-- ════ DATA ════ -->
+<script>
+const priceData=[
+{time:'2025-10-10',open:121579.4,high:122497,low:101516.5,close:112714.9},{time:'2025-10-11',open:112715,high:113300.1,low:109501,close:110579.1},{time:'2025-10-12',open:110579.2,high:115730.3,low:109509.3,close:114894.4},{time:'2025-10-13',open:114894.5,high:115912,low:113600.5,close:115111.9},{time:'2025-10-14',open:115112,high:115360.2,low:109802,close:112983.8},{time:'2025-10-15',open:112983.9,high:113576.1,low:110096.9,close:110699},{time:'2025-10-16',open:110699.1,high:111960,low:107350,close:108129.4},{time:'2025-10-17',open:108129.4,high:109199.8,low:103470,close:106378.6},{time:'2025-10-18',open:106378.5,high:107452.6,low:106270,close:107117.5},{time:'2025-10-19',open:107117.5,high:109399.9,low:106055.8,close:108586.2},{time:'2025-10-20',open:108586.2,high:111650,low:107377.2,close:110469.9},{time:'2025-10-21',open:110469.9,high:113940,low:107400,close:108253.7},{time:'2025-10-22',open:108253.8,high:109160,low:106360.3,close:107532},{time:'2025-10-23',open:107532.1,high:111240,low:107462.9,close:110025.9},{time:'2025-10-24',open:110026,high:112086,low:109650,close:110965.4},{time:'2025-10-25',open:110965.4,high:111903.9,low:110600.5,close:111589.4},{time:'2025-10-26',open:111589.4,high:115521.7,low:111200,close:114497.8},{time:'2025-10-27',open:114497.9,high:116380.2,low:113792.4,close:114064.1},{time:'2025-10-28',open:114064.2,high:116074.3,low:112121.4,close:112833.5},{time:'2025-10-29',open:112833.5,high:113593,low:109026.4,close:109985.6},{time:'2025-10-30',open:109985.6,high:111565.1,low:106200,close:108263.5},{time:'2025-10-31',open:108263.6,high:111233,low:108226.6,close:109557.3},{time:'2025-11-01',open:109557.2,high:110557,low:109351.5,close:110047.2},{time:'2025-11-02',open:110047.3,high:111216,low:109368.9,close:110494.9},{time:'2025-11-03',open:110494.9,high:110711,low:105300,close:106544},{time:'2025-11-04',open:106544,high:107271.9,low:98888.8,close:101450.3},{time:'2025-11-05',open:101450.2,high:104497.6,low:98909.7,close:103837},{time:'2025-11-06',open:103837,high:104210.2,low:100238.4,close:101305.6},{time:'2025-11-07',open:101305.6,high:104070.7,low:99200,close:103305.2},{time:'2025-11-08',open:103305.3,high:103373.8,low:101400.1,close:102269.3},{time:'2025-11-09',open:102269.3,high:105440,low:101300,close:104670.6},{time:'2025-11-10',open:104670.7,high:106666,low:104205.9,close:105966.3},{time:'2025-11-11',open:105966.3,high:107473.7,low:102400,close:103005.8},{time:'2025-11-12',open:103005.8,high:105297,low:100711,close:101605.8},{time:'2025-11-13',open:101605.8,high:104024.6,low:97959,close:99654.3},{time:'2025-11-14',open:99654.3,high:99862.8,low:93955,close:94544.9},{time:'2025-11-15',open:94544.9,high:96800,low:94523.9,close:95560.3},{time:'2025-11-16',open:95560.4,high:96600,low:92922.8,close:94221.7},{time:'2025-11-17',open:94221.7,high:96012.2,low:91250,close:92169.7},{time:'2025-11-18',open:92169.8,high:93799.1,low:89012,close:92916.9},{time:'2025-11-19',open:92916.8,high:92944.8,low:88564.4,close:91508.9},{time:'2025-11-20',open:91509,high:93150,low:86066.6,close:86601.3},{time:'2025-11-21',open:86601.4,high:87465.4,low:80600,close:85093.5},{time:'2025-11-22',open:85093.6,high:85599.9,low:83456,close:84689.4},{time:'2025-11-23',open:84689.4,high:88100,low:84622,close:86807.7},{time:'2025-11-24',open:86807.6,high:89177.3,low:85226.4,close:88247.1},{time:'2025-11-25',open:88247.1,high:88477.6,low:86061.1,close:87324.1},{time:'2025-11-26',open:87324.1,high:90655.4,low:86260.9,close:90438.1},{time:'2025-11-27',open:90438,high:91931.9,low:90024.4,close:91292.2},{time:'2025-11-28',open:91292.2,high:93080,low:90155,close:90847.8},{time:'2025-11-29',open:90847.8,high:91130,low:90092.7,close:90765},{time:'2025-11-30',open:90764.9,high:91934.4,low:90300,close:90320.6},{time:'2025-12-01',open:90320.5,high:90396.9,low:83786,close:86241.6},{time:'2025-12-02',open:86241.5,high:92273.2,low:86140.1,close:91249.1},{time:'2025-12-03',open:91249.1,high:94185,low:90954.8,close:93376.7},{time:'2025-12-04',open:93376.8,high:94040,low:90822.5,close:92034.7},{time:'2025-12-05',open:92034.7,high:92665.5,low:87976.3,close:89288.5},{time:'2025-12-06',open:89288.6,high:90257.3,low:88870.1,close:89197.1},{time:'2025-12-07',open:89197.1,high:91722,low:87688,close:90345.4},{time:'2025-12-08',open:90345.4,high:92262.6,low:89553.8,close:90610.8},{time:'2025-12-09',open:90610.8,high:94555,low:89368.9,close:92638.4},{time:'2025-12-10',open:92638.3,high:94443.7,low:91520,close:91977.5},{time:'2025-12-11',open:91977.5,high:93547.3,low:89200,close:92477.5},{time:'2025-12-12',open:92477.6,high:92719,low:89429,close:90229.6},{time:'2025-12-13',open:90229.7,high:90599,low:89711.9,close:90191.3},{time:'2025-12-14',open:90191.3,high:90440,low:87504.3,close:88118.8},{time:'2025-12-15',open:88118.8,high:89972.4,low:85073,close:86389.9},{time:'2025-12-16',open:86390,high:88143.9,low:85226,close:87826.3},{time:'2025-12-17',open:87826.3,high:90363.2,low:85261.3,close:86201.6},{time:'2025-12-18',open:86201.6,high:89447.9,low:84408.6,close:85469.7},{time:'2025-12-19',open:85469.8,high:89374.6,low:85062.7,close:88100},{time:'2025-12-20',open:88100,high:88551.8,low:87698.5,close:88320.8},{time:'2025-12-21',open:88320.7,high:89050,low:87548.5,close:88621.3},{time:'2025-12-22',open:88621.3,high:90599,low:87845,close:88581.5},{time:'2025-12-23',open:88581.5,high:88904.9,low:86536,close:87463},{time:'2025-12-24',open:87463.1,high:88033.3,low:86355,close:87627.3},{time:'2025-12-25',open:87627.4,high:88594,low:86902.1,close:87182.8},{time:'2025-12-26',open:87182.8,high:89557.6,low:86619.9,close:87318.2},{time:'2025-12-27',open:87318.3,high:87956.9,low:87203,close:87829.4},{time:'2025-12-28',open:87829.5,high:88078.3,low:87402.6,close:87920.5},{time:'2025-12-29',open:87920.4,high:90373.4,low:86760,close:87203.3},{time:'2025-12-30',open:87203.2,high:89355,low:86789,close:88455.3},{time:'2025-12-31',open:88455.2,high:89192.8,low:87189.2,close:87608.2},{time:'2026-01-01',open:87608.3,high:88881.4,low:87508.4,close:88800},{time:'2026-01-02',open:88800,high:90945.1,low:88324.4,close:89951.4},{time:'2026-01-03',open:89951.5,high:90716.9,low:89261.2,close:90595.8},{time:'2026-01-04',open:90595.8,high:91779.7,low:90595.7,close:91497.1},{time:'2026-01-05',open:91497.2,high:94760.3,low:91476.5,close:93822.4},{time:'2026-01-06',open:93822.3,high:94415.4,low:91209,close:93708},{time:'2026-01-07',open:93708.1,high:93708.1,low:90634.1,close:91328},{time:'2026-01-08',open:91328.1,high:91666,low:89242,close:91059.8},{time:'2026-01-09',open:91059.9,high:91999,low:89632.8,close:90603.6},{time:'2026-01-10',open:90603.7,high:90800,low:90351.6,close:90469.6},{time:'2026-01-11',open:90469.7,high:91252.5,low:90175.3,close:90964.4},{time:'2026-01-12',open:90964.4,high:92488,low:90066,close:91252.6},{time:'2026-01-13',open:91252.5,high:96863.7,low:91011,close:95375.2},{time:'2026-01-14',open:95375.2,high:97932.1,low:94413.4,close:96907.9},{time:'2026-01-15',open:96908,high:97155,low:95080,close:95567.3},{time:'2026-01-16',open:95567.4,high:95825,low:94234.5,close:95503.7},{time:'2026-01-17',open:95503.8,high:95621.9,low:94977.5,close:95107.9},{time:'2026-01-18',open:95107.9,high:95490,low:93550.3,close:93614},{time:'2026-01-19',open:93614,high:93614.1,low:91800,close:92589.6},{time:'2026-01-20',open:92589.6,high:92845,low:87787.2,close:88390.6},{time:'2026-01-21',open:88390.7,high:90599.5,low:87205.5,close:89411.4},{time:'2026-01-22',open:89411.4,high:90327.7,low:88465.6,close:89518.5},{time:'2026-01-23',open:89518.4,high:91195,low:88530,close:89558.7},{time:'2026-01-24',open:89558.7,high:89893.9,low:89116.9,close:89180.7},{time:'2026-01-25',open:89180.7,high:89281.6,low:86021.7,close:86628.9},{time:'2026-01-26',open:86628.9,high:88834.1,low:86463.2,close:88300.6},{time:'2026-01-27',open:88300.6,high:89499,low:87265.4,close:89197.8},{time:'2026-01-28',open:89197.8,high:90592.7,low:88786,close:89261.7},{time:'2026-01-29',open:89261.7,high:89316.8,low:83338.3,close:84604.7},{time:'2026-01-30',open:84604.7,high:84697.2,low:81000,close:84211.4},{time:'2026-01-31',open:84211.4,high:84239.5,low:75500,close:78706.8},{time:'2026-02-01',open:78706.7,high:79396.8,low:75644,close:76931.5},{time:'2026-02-02',open:76931.6,high:79311,low:74555,close:78692.5},{time:'2026-02-03',open:78692.5,high:79163,low:72889.2,close:75732.4},{time:'2026-02-04',open:75732.4,high:76952.5,low:71838,close:73137.4},{time:'2026-02-05',open:73137.5,high:73316.3,low:62233.3,close:62868.1},{time:'2026-02-06',open:62868.1,high:71714.4,low:59800,close:70544.5},{time:'2026-02-07',open:70544.5,high:71690,low:67250,close:69254.2},{time:'2026-02-08',open:69254.3,high:72300,low:68843.7,close:70288.1},{time:'2026-02-09',open:70288.2,high:71434.9,low:68271.7,close:70110.5},{time:'2026-02-10',open:70110.6,high:70499.9,low:67883,close:68805.3},{time:'2026-02-11',open:68805.3,high:69262.7,low:65718.5,close:67054.4},{time:'2026-02-12',open:67054.8,high:68385,low:65081,close:66243.1},{time:'2026-02-13',open:66243.2,high:69473.7,low:65833.9,close:68821.5},{time:'2026-02-14',open:68821.6,high:70557.7,low:68689.1,close:69795.4},{time:'2026-02-15',open:69795.4,high:70938.5,low:68029.6,close:68796.9},{time:'2026-02-16',open:68796.9,high:70110.9,low:67250,close:68862.5},{time:'2026-02-17',open:68862.6,high:69228.6,low:66588,close:67475.9},{time:'2026-02-18',open:67475.9,high:68438,low:65826.1,close:66422.8},{time:'2026-02-19',open:66422.8,high:67299.4,low:65595.7,close:66974},{time:'2026-02-20',open:66973.9,high:68283.7,low:66408.1,close:67979.3},{time:'2026-02-21',open:67979.3,high:68687,low:67488.9,close:67933.1},{time:'2026-02-22',open:67933.2,high:68220,low:67150,close:67613.5},{time:'2026-02-23',open:67613.6,high:67655.8,low:63860,close:64625.8},{time:'2026-02-24',open:64625.7,high:64980,low:62401.7,close:64031.3},{time:'2026-02-25',open:64031.4,high:69999,low:63876,close:67952.5},{time:'2026-02-26',open:67952.4,high:68850,low:66462,close:67448.2},{time:'2026-02-27',open:67448.1,high:68188.8,low:64875.6,close:65836},{time:'2026-02-28',open:65836,high:67735,low:62979.5,close:66937.1},{time:'2026-03-01',open:66937,high:68189,low:65011,close:65750},{time:'2026-03-02',open:65749.9,high:70100,low:65234.4,close:68801.8},{time:'2026-03-03',open:68801.8,high:69221.6,low:66080,close:68295.3},{time:'2026-03-04',open:68295.2,high:74046.5,low:67350,close:72641.4},{time:'2026-03-05',open:72641.4,high:73539.1,low:70612.8,close:70854.8},{time:'2026-03-06',open:70854.8,high:71387.5,low:67712.3,close:68083},{time:'2026-03-07',open:68083,high:68524.9,low:66850.1,close:67232.1},{time:'2026-03-08',open:67232.1,high:68171.6,low:65569.2,close:65934.3},{time:'2026-03-09',open:65934.3,high:69498,low:65770.5,close:68394.1},{time:'2026-03-10',open:68394,high:71748.1,low:68345,close:69901.9},{time:'2026-03-11',open:69901.8,high:71286,low:68932.9,close:70150},{time:'2026-03-12',open:70150,high:70756.5,low:69150,close:70480.1},{time:'2026-03-13',open:70480.1,high:73870,low:70342.7,close:70895.5},{time:'2026-03-14',open:70895.5,high:71272.3,low:70256,close:71174.4},{time:'2026-03-15',open:71174.4,high:73199.9,low:70815.7,close:72778.9},{time:'2026-03-16',open:72778.8,high:74880,low:72235.6,close:74846.4},{time:'2026-03-17',open:74846.4,high:75998.9,low:73330.3,close:73872.4},{time:'2026-03-18',open:73872.3,high:74633,low:70456,close:71202.9},{time:'2026-03-19',open:71202.9,high:71598.3,low:68750,close:69887.4},{time:'2026-03-20',open:69887.4,high:71342.2,low:69350,close:70472.7},{time:'2026-03-21',open:70472.6,high:71077.7,low:68511.3,close:68881.5},{time:'2026-03-22',open:68881.5,high:69555.8,low:67300,close:67830.6},{time:'2026-03-23',open:67830.7,high:71789.8,low:67400.1,close:70865.9},{time:'2026-03-24',open:70866,high:71377.5,low:68884.5,close:70523.9},{time:'2026-03-25',open:70524,high:71999.9,low:70375,close:71297.5},{time:'2026-03-26',open:71297.4,high:71408.1,low:68115.8,close:68788},{time:'2026-03-27',open:68788.1,high:69142.7,low:65501,close:66364.2},{time:'2026-03-28',open:66364.1,high:67284,low:65888,close:66334.8},{time:'2026-03-29',open:66334.8,high:67100,low:64918.2,close:65977.9},{time:'2026-03-30',open:65978,high:68148.4,low:65754.2,close:66764.4},{time:'2026-03-31',open:66764.3,high:68600,low:65938,close:68241.5},{time:'2026-04-01',open:68241.4,high:69288,low:67534.9,close:68086.5},{time:'2026-04-02',open:68086.4,high:68639.1,low:65676.1,close:66868.5},{time:'2026-04-03',open:66868.6,high:67350,low:66240,close:66930},{time:'2026-04-04',open:66930,high:67554.5,low:66745.5,close:67271},{time:'2026-04-05',open:67271.1,high:69108,low:66575.5,close:68997.9},{time:'2026-04-06',open:68997.9,high:70332.5,low:68227.5,close:68817.9},{time:'2026-04-07',open:68817.9,high:69219,low:68033,close:68370.5}
+];
+const oiData=[
+{time:'2025-10-10',value:70.51},{time:'2025-10-11',value:69.78},{time:'2025-10-12',value:74.73},{time:'2025-10-13',value:74.88},{time:'2025-10-14',value:73.33},{time:'2025-10-15',value:71.72},{time:'2025-10-16',value:73.19},{time:'2025-10-17',value:69.43},{time:'2025-10-18',value:68.72},{time:'2025-10-19',value:70.25},{time:'2025-10-20',value:72.00},{time:'2025-10-21',value:69.56},{time:'2025-10-22',value:67.70},{time:'2025-10-23',value:69.13},{time:'2025-10-24',value:71.15},{time:'2025-10-25',value:71.38},{time:'2025-10-26',value:74.21},{time:'2025-10-27',value:74.72},{time:'2025-10-28',value:73.52},{time:'2025-10-29',value:73.95},{time:'2025-10-30',value:73.39},{time:'2025-10-31',value:71.03},{time:'2025-11-01',value:70.25},{time:'2025-11-02',value:70.13},{time:'2025-11-03',value:69.57},{time:'2025-11-04',value:67.36},{time:'2025-11-05',value:69.32},{time:'2025-11-06',value:68.82},{time:'2025-11-07',value:70.79},{time:'2025-11-08',value:68.47},{time:'2025-11-09',value:68.37},{time:'2025-11-10',value:68.96},{time:'2025-11-11',value:67.97},{time:'2025-11-12',value:66.73},{time:'2025-11-13',value:68.32},{time:'2025-11-14',value:66.55},{time:'2025-11-15',value:66.29},{time:'2025-11-16',value:66.60},{time:'2025-11-17',value:66.66},{time:'2025-11-18',value:65.99},{time:'2025-11-19',value:66.98},{time:'2025-11-20',value:65.17},{time:'2025-11-21',value:58.79},{time:'2025-11-22',value:58.05},{time:'2025-11-23',value:59.86},{time:'2025-11-24',value:60.53},{time:'2025-11-25',value:59.23},{time:'2025-11-26',value:60.94},{time:'2025-11-27',value:59.91},{time:'2025-11-28',value:59.51},{time:'2025-11-29',value:58.71},{time:'2025-11-30',value:59.13},{time:'2025-12-01',value:57.67},{time:'2025-12-02',value:58.84},{time:'2025-12-03',value:59.94},{time:'2025-12-04',value:59.37},{time:'2025-12-05',value:57.35},{time:'2025-12-06',value:56.32},{time:'2025-12-07',value:57.16},{time:'2025-12-08',value:57.61},{time:'2025-12-09',value:58.46},{time:'2025-12-10',value:58.81},{time:'2025-12-11',value:59.78},{time:'2025-12-12',value:58.67},{time:'2025-12-13',value:59.80},{time:'2025-12-14',value:61.35},{time:'2025-12-15',value:61.16},{time:'2025-12-16',value:58.84},{time:'2025-12-17',value:57.29},{time:'2025-12-18',value:57.02},{time:'2025-12-19',value:59.03},{time:'2025-12-20',value:58.51},{time:'2025-12-21',value:58.51},{time:'2025-12-22',value:59.16},{time:'2025-12-23',value:58.33},{time:'2025-12-24',value:57.50},{time:'2025-12-25',value:56.59},{time:'2025-12-26',value:56.38},{time:'2025-12-27',value:56.61},{time:'2025-12-28',value:57.44},{time:'2025-12-29',value:57.82},{time:'2025-12-30',value:56.72},{time:'2025-12-31',value:54.62},{time:'2026-01-01',value:55.61},{time:'2026-01-02',value:56.70},{time:'2026-01-03',value:56.96},{time:'2026-01-04',value:58.66},{time:'2026-01-05',value:61.97},{time:'2026-01-06',value:60.53},{time:'2026-01-07',value:62.08},{time:'2026-01-08',value:62.14},{time:'2026-01-09',value:60.82},{time:'2026-01-10',value:61.15},{time:'2026-01-11',value:61.92},{time:'2026-01-12',value:60.07},{time:'2026-01-13',value:62.99},{time:'2026-01-14',value:66.17},{time:'2026-01-15',value:64.08},{time:'2026-01-16',value:62.93},{time:'2026-01-17',value:61.60},{time:'2026-01-18',value:60.88},{time:'2026-01-19',value:61.33},{time:'2026-01-20',value:60.44},{time:'2026-01-21',value:60.13},{time:'2026-01-22',value:59.64},{time:'2026-01-23',value:58.71},{time:'2026-01-24',value:58.87},{time:'2026-01-25',value:58.31},{time:'2026-01-26',value:58.38},{time:'2026-01-27',value:60.26},{time:'2026-01-28',value:59.80},{time:'2026-01-29',value:60.90},{time:'2026-01-30',value:58.93},{time:'2026-01-31',value:54.03},{time:'2026-02-01',value:52.03},{time:'2026-02-02',value:52.37},{time:'2026-02-03',value:50.49},{time:'2026-02-04',value:48.53},{time:'2026-02-05',value:46.71},{time:'2026-02-06',value:48.19},{time:'2026-02-07',value:46.65},{time:'2026-02-08',value:46.05},{time:'2026-02-09',value:46.16},{time:'2026-02-10',value:44.77},{time:'2026-02-11',value:45.18},{time:'2026-02-12',value:44.60},{time:'2026-02-13',value:46.07},{time:'2026-02-14',value:44.87},{time:'2026-02-15',value:43.55},{time:'2026-02-16',value:43.44},{time:'2026-02-17',value:43.99},{time:'2026-02-18',value:44.20},{time:'2026-02-19',value:44.76},{time:'2026-02-20',value:45.62},{time:'2026-02-21',value:45.26},{time:'2026-02-22',value:45.08},{time:'2026-02-23',value:44.35},{time:'2026-02-24',value:43.63},{time:'2026-02-25',value:45.13},{time:'2026-02-26',value:44.34},{time:'2026-02-27',value:44.00},{time:'2026-02-28',value:43.80},{time:'2026-03-01',value:43.04},{time:'2026-03-02',value:45.58},{time:'2026-03-03',value:43.95},{time:'2026-03-04',value:49.67},{time:'2026-03-05',value:46.79},{time:'2026-03-06',value:45.02},{time:'2026-03-07',value:43.83},{time:'2026-03-08',value:43.07},{time:'2026-03-09',value:44.58},{time:'2026-03-10',value:46.06},{time:'2026-03-11',value:46.92},{time:'2026-03-12',value:47.52},{time:'2026-03-13',value:47.28},{time:'2026-03-14',value:46.59},{time:'2026-03-15',value:47.91},{time:'2026-03-16',value:51.29},{time:'2026-03-17',value:50.54},{time:'2026-03-18',value:48.55},{time:'2026-03-19',value:47.96},{time:'2026-03-20',value:47.31},{time:'2026-03-21',value:45.73},{time:'2026-03-22',value:45.72},{time:'2026-03-23',value:47.59},{time:'2026-03-24',value:48.72},{time:'2026-03-25',value:49.98},{time:'2026-03-26',value:49.64},{time:'2026-03-27',value:49.70},{time:'2026-03-28',value:48.80},{time:'2026-03-29',value:48.28},{time:'2026-03-30',value:49.23},{time:'2026-03-31',value:48.04},{time:'2026-04-01',value:47.64},{time:'2026-04-02',value:46.96},{time:'2026-04-03',value:46.40},{time:'2026-04-04',value:46.94},{time:'2026-04-05',value:48.90},{time:'2026-04-06',value:48.61},{time:'2026-04-07',value:48.55}
+];
+
+// Compute 30-day rolling OI change
+const oiChangeData=[];
+for(let i=30;i<oiData.length;i++){
+  const cur=oiData[i].value,past=oiData[i-30].value;
+  oiChangeData.push({time:oiData[i].time,value:parseFloat(((cur-past)/past*100).toFixed(2))});
+}
+
+// ═══ PRICE CHART ═══
+const pc=document.getElementById('priceChart');
+const priceChart=LightweightCharts.createChart(pc,{
+  width:pc.clientWidth,height:400,
+  layout:{background:{color:'#161821'},textColor:'#5c6078',fontSize:11,fontFamily:"'Inter','Noto Sans SC',sans-serif"},
+  grid:{vertLines:{color:'rgba(124,92,252,0.06)'},horzLines:{color:'rgba(124,92,252,0.06)'}},
+  crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+  rightPriceScale:{borderColor:'rgba(124,92,252,0.12)'},
+  timeScale:{borderColor:'rgba(124,92,252,0.12)',timeVisible:false}
+});
+const candles=priceChart.addCandlestickSeries({
+  upColor:'#00ff88',downColor:'#ff4d6a',
+  borderUpColor:'#00ff88',borderDownColor:'#ff4d6a',
+  wickUpColor:'#00ff88',wickDownColor:'#ff4d6a'
+});
+candles.setData(priceData);
+
+// OI overlay
+const oiLine=priceChart.addLineSeries({color:'#00d4aa',lineWidth:1,priceScaleId:'oi',lastValueVisible:false,priceLineVisible:false});
+priceChart.priceScale('oi').applyOptions({scaleMargins:{top:0.7,bottom:0},borderVisible:false});
+oiLine.setData(oiData.map(d=>({time:d.time,value:d.value})));
+
+// Signal markers — short labels, detail on hover card
+const signalDates={
+  '2026-04-07':{card:'current'},       // latest prediction → entry/SL/TP card
+  '2026-01-14':{card:'hist-short'},     // historical → backtest card
+  '2025-10-13':{card:'hist-short'},
+  '2026-02-05':{card:'hist-long'},
+  '2025-11-21':{card:'hist-long'}
+};
+const markers=[
+  {time:'2026-04-07',position:'aboveBar',color:'#ffb224',shape:'arrowDown',text:'SHORT'},
+  {time:'2026-01-14',position:'aboveBar',color:'#ff4d6a',shape:'arrowDown',text:'SHORT'},
+  {time:'2025-10-13',position:'aboveBar',color:'#ff4d6a',shape:'arrowDown',text:'SHORT'},
+  {time:'2026-02-05',position:'belowBar',color:'#00ff88',shape:'arrowUp',text:'LONG'},
+  {time:'2025-11-21',position:'belowBar',color:'#00ff88',shape:'arrowUp',text:'LONG'}
+];
+candles.setMarkers(markers);
+
+// Hover card logic
+const hoverCards={
+  'current':document.getElementById('sig-card-current'),
+  'hist-short':document.getElementById('sig-card-hist-short'),
+  'hist-long':document.getElementById('sig-card-hist-long')
+};
+const allCards=Object.values(hoverCards);
+const chartParent=pc.closest('.chart-card');
+
+priceChart.subscribeCrosshairMove(param=>{
+  allCards.forEach(c=>c.style.display='none');
+  if(!param.time||!param.point) return;
+  let timeStr;
+  if(typeof param.time==='string'){timeStr=param.time}
+  else{timeStr=param.time.year+'-'+String(param.time.month).padStart(2,'0')+'-'+String(param.time.day).padStart(2,'0')}
+  const sig=signalDates[timeStr];
+  if(!sig) return;
+  const card=hoverCards[sig.card];
+  if(!card) return;
+  const parentRect=chartParent.getBoundingClientRect();
+  const pcRect=pc.getBoundingClientRect();
+  const offsetX=pcRect.left-parentRect.left+param.point.x;
+  const offsetY=pcRect.top-parentRect.top+param.point.y;
+  const cardW=300,cardH=card.offsetHeight||200;
+  const left=offsetX+cardW+20>parentRect.width?offsetX-cardW-10:offsetX+16;
+  const top=Math.max(10,Math.min(offsetY-80,parentRect.height-cardH-10));
+  card.style.left=left+'px';
+  card.style.top=top+'px';
+  card.style.display='block';
+});
+
+// ═══ OI CHANGE CHART ═══
+const oc=document.getElementById('oiChart');
+const oiChart=LightweightCharts.createChart(oc,{
+  width:oc.clientWidth,height:150,
+  layout:{background:{color:'#161821'},textColor:'#5c6078',fontSize:11,fontFamily:"'Inter','Noto Sans SC',sans-serif"},
+  grid:{vertLines:{color:'rgba(124,92,252,0.06)'},horzLines:{color:'rgba(124,92,252,0.06)'}},
+  rightPriceScale:{borderColor:'rgba(124,92,252,0.12)'},
+  timeScale:{borderColor:'rgba(124,92,252,0.12)',timeVisible:false}
+});
+const hist=oiChart.addHistogramSeries({priceFormat:{type:'custom',formatter:v=>v.toFixed(1)+'%'}});
+hist.setData(oiChangeData.map(d=>({
+  time:d.time,value:d.value,
+  color:d.value>15?'#ff4d6a':d.value>10?'#ffb224':d.value<-10?'#00ff88':d.value<-5?'rgba(0,255,136,.4)':'#252736'
+})));
+hist.createPriceLine({price:15,color:'#ff4d6a',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:'SHORT +15%'});
+hist.createPriceLine({price:-10,color:'#00ff88',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:'LONG -10%'});
+hist.createPriceLine({price:0,color:'#5c6078',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Solid,axisLabelVisible:false});
+
+// Sync crosshairs
+priceChart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(r)oiChart.timeScale().setVisibleLogicalRange(r)});
+oiChart.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(r)priceChart.timeScale().setVisibleLogicalRange(r)});
+
+// Responsive
+window.addEventListener('resize',()=>{
+  priceChart.applyOptions({width:pc.clientWidth});
+  oiChart.applyOptions({width:oc.clientWidth});
+});
+
+// Tooltips are now CSS hover-based, no JS needed
+</script>
+</body>
+</html>
