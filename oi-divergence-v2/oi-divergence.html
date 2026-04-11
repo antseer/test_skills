@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OI 背离狙击终端</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --t-bg:#0b0e11;--t-bg2:#111418;--t-bg3:#161a1e;--t-bg4:#1b2028;--t-bg5:#20252c;
+  --t-up:#0ecb81;--t-up-dim:#0ecb8120;--t-dn:#f6465d;--t-dn-dim:#f6465d20;
+  --t-amber:#f0b90b;--t-cyan:#1e9cf4;--t-purple:#a78bfa;
+  --t-text:#eaecef;--t-text2:#848e9c;--t-text3:#5e6673;--t-text4:#3a4048;
+  --t-border:#252930;--t-border2:#2b3139;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-sans:'Noto Sans SC','Helvetica Neue',sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--t-bg);color:var(--t-text);font-family:var(--font-sans)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--t-border2);border-radius:2px}
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#topbar{height:44px;background:var(--t-bg2);border-bottom:1px solid var(--t-border);display:flex;align-items:center;padding:0 16px;gap:16px;flex-shrink:0}
+#main{display:flex;flex:1;overflow:hidden}
+#coin-list{width:240px;min-width:200px;max-width:300px;background:var(--t-bg2);border-right:1px solid var(--t-border);display:flex;flex-direction:column;flex-shrink:0}
+#coin-list-header{padding:10px 12px;border-bottom:1px solid var(--t-border);font-size:11px;color:var(--t-text2);letter-spacing:1px;text-transform:uppercase;font-family:var(--font-mono);display:flex;align-items:center;gap:6px}
+#coin-list-header .badge{background:var(--t-dn-dim);color:var(--t-dn);padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px}
+#coin-list-body{flex:1;overflow-y:auto}
+#chart-panel{flex:1;display:flex;flex-direction:column;min-width:0}
+#chart-header{height:42px;background:var(--t-bg2);border-bottom:1px solid var(--t-border);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;overflow-x:auto;overflow-y:hidden}
+#chart-header>*{flex-shrink:0}
+#chart-header::-webkit-scrollbar{height:0;display:none}
+.chart-symbol{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px}
+.chart-exchange{font-size:10px;color:var(--t-text3);font-weight:400}
+.chart-intervals{display:flex;align-items:center;gap:2px}
+.chart-ohlc{font-family:var(--font-mono);font-size:11px;color:var(--t-text2);margin-left:12px;display:flex;gap:10px;white-space:nowrap}
+#chart-container{flex:1;position:relative;overflow:hidden;cursor:crosshair;background:#0d1017}
+
+/* ── Coin Item ── */
+.coin-item{padding:10px 12px;border-bottom:1px solid var(--t-border);cursor:pointer;display:flex;align-items:center;gap:10px;border-left:2px solid transparent;transition:background .15s}
+.coin-item:hover{background:#ffffff06}
+.coin-item.active{background:#f6465d0c;border-left-color:var(--t-dn)}
+.coin-item .rank{width:20px;height:20px;border-radius:50%;background:var(--t-dn-dim);border:1px solid #f6465d44;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:700;color:var(--t-dn);flex-shrink:0}
+.coin-item .info{flex:1;min-width:0}
+.coin-item .name{font-weight:700;font-size:13px;color:#fff}
+.coin-item .pair{font-size:10px;color:var(--t-text3);font-family:var(--font-mono)}
+.coin-item .chg{font-family:var(--font-mono);font-size:10px;margin-top:2px}
+.coin-item .div-info{font-size:10px;color:var(--t-text3);margin-top:1px}
+.coin-item .div-badge{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:4px;background:var(--t-dn);color:#fff;font-weight:600;flex-shrink:0}
+
+/* ── Interval Btn ── */
+.iv-btn{padding:2px 10px;font-size:12px;font-family:var(--font-mono);font-weight:400;color:var(--t-text2);background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;line-height:22px}
+.iv-btn.active{font-weight:600;color:#e2b340;background:rgba(226,179,64,.12);border-color:rgba(226,179,64,.3)}
+
+/* ── Crosshair OHLC overlay ── */
+#crosshair-ohlc{position:absolute;top:6px;left:10px;font-family:var(--font-mono);font-size:11px;color:var(--t-text2);display:none;gap:10px;z-index:16;pointer-events:none}
+
+/* ── OI label ── */
+#oi-label{position:absolute;bottom:60px;left:10px;font-family:var(--font-mono);font-size:10px;color:var(--t-text3);z-index:10;pointer-events:none;display:flex;align-items:center;gap:4px}
+#oi-label .dot{width:8px;height:3px;background:var(--t-cyan);border-radius:1px}
+
+/* ── Signal Marker ── */
+.signal-marker{position:absolute;transform:translate(-50%,-100%);z-index:20;cursor:pointer;display:flex;flex-direction:column;align-items:center;user-select:none}
+.signal-marker .label{font-family:var(--font-mono);font-size:8px;font-weight:700;letter-spacing:1.5px;margin-bottom:1px}
+.signal-marker .arrow{width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:13px solid var(--t-dn);filter:drop-shadow(0 0 8px #f6465d88);transition:filter .15s}
+.signal-marker:hover .arrow{filter:drop-shadow(0 0 16px #f6465dcc)}
+
+/* ── Signal Tooltip ── */
+.signal-tooltip{position:fixed;background:linear-gradient(145deg,#1a1014,#131820);border:1px solid #f6465d55;border-radius:10px;padding:14px 16px;width:290px;box-shadow:0 16px 48px #000c,0 0 40px #f6465d0c;z-index:9999;pointer-events:none;display:none}
+.signal-tooltip.show{display:block}
+.tt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--t-border)}
+.tt-head .title{font-weight:700;font-size:13px;color:#fff}
+.tt-head .badge{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:3px;background:var(--t-dn-dim);color:var(--t-dn);border:1px solid #f6465d44;font-weight:600}
+.tt-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;gap:8px}
+.tt-row .lbl{color:var(--t-text2);flex-shrink:0}
+.tt-row .val{font-family:var(--font-mono);font-weight:600;color:#fff;text-align:right}
+.tt-row .note{color:var(--t-text3);font-weight:400;margin-left:3px;font-size:9px}
+.tt-sep{height:1px;background:var(--t-border);margin:5px 0}
+.tt-rr-box{text-align:center;margin-top:6px;padding:6px;background:var(--t-up-dim);border:1px solid #0ecb8122;border-radius:5px}
+.tt-rr-box .rr-val{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--t-up)}
+.tt-rr-box .rr-lbl{font-size:9px;color:var(--t-text2);margin-top:1px}
+
+/* ── Right Sidebar ── */
+#right-sidebar{width:260px;min-width:220px;max-width:320px;background:var(--t-bg2);border-left:1px solid var(--t-border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sb-section{padding:12px 14px;border-bottom:1px solid var(--t-border)}
+.sb-title{font-size:10px;color:var(--t-text3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--font-mono);margin-bottom:8px;font-weight:600}
+.sb-stat-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px}
+.sb-stat-row .lbl{color:var(--t-text2)}
+.sb-stat-row .val{font-family:var(--font-mono);font-weight:500}
+.sb-sig-row{display:flex;justify-content:space-between;padding:4px 0;font-size:11px}
+.sb-sig-row .lbl{color:var(--t-text2)}
+.sb-sig-row .val{font-family:var(--font-mono);font-weight:500}
+.sb-perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sb-perf-item{padding:8px;border-radius:6px;text-align:center}
+.sb-perf-item .pval{font-family:var(--font-mono);font-size:14px;font-weight:700}
+.sb-perf-item .plbl{font-size:10px;color:var(--t-text2);margin-top:2px}
+
+/* ── Loading ── */
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--t-text3);font-family:var(--font-mono);font-size:12px;z-index:5}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Topbar -->
+  <div id="topbar">
+    <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--t-dn);letter-spacing:1px;display:flex;align-items:center;gap:6px">
+      &#9889; OI SNIPER
+      <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--t-dn-dim);color:var(--t-dn);border:1px solid #f6465d33;letter-spacing:1.5px">TERMINAL</span>
+    </div>
+    <div style="width:1px;height:20px;background:var(--t-border)"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:var(--t-up);box-shadow:0 0 8px var(--t-up);animation:blink 1.4s infinite;flex-shrink:0"></div>
+    <div id="scan-info" style="font-family:var(--font-mono);font-size:11px;color:var(--t-text2)"></div>
+    <div id="pipeline-stats" style="display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11px;color:var(--t-text3);margin-left:auto"></div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <!-- Coin List -->
+    <div id="coin-list">
+      <div id="coin-list-header">做空信号 <span class="badge" id="coin-count">0</span></div>
+      <div id="coin-list-body"></div>
+    </div>
+
+    <!-- Chart Panel -->
+    <div id="chart-panel">
+      <div id="chart-header"></div>
+      <div id="chart-container">
+        <div id="crosshair-ohlc"></div>
+        <div id="oi-label"><span class="dot"></span>OI (持仓量)</div>
+        <div id="loading">加载中...</div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div id="right-sidebar"></div>
+  </div>
+</div>
+
+<!-- Signal Tooltip (one shared, repositioned) -->
+<div class="signal-tooltip" id="signal-tooltip"></div>
+
+<script>
+// ── State ──
+let listData = { scanTime: '', pipeline: null, items: [] };
+let activeSymbol = '';
+let currentInterval = '5m';
+let detail = null;
+let klines = [];
+let chart = null;
+let candleSeries = null;
+let volSeries = null;
+let oiSeries = null;
+let oiBaseline = 0;
+
+// ── Format helpers ──
+function formatPrice(p) {
+  if (p == null || isNaN(p)) return '\u2014';
+  if (p < 0.0001) return p.toFixed(10);
+  if (p < 0.001) return p.toFixed(8);
+  if (p < 0.1) return p.toFixed(6);
+  if (p < 1) return p.toFixed(4);
+  if (p < 100) return p.toFixed(3);
+  return p.toFixed(2);
+}
+function formatPct(pct, d) {
+  if (d === undefined) d = 2;
+  if (pct == null) return '\u2014';
+  return (pct >= 0 ? '+' : '') + pct.toFixed(d) + '%';
+}
+function formatOI(v) {
+  if (v == null || isNaN(v)) return '\u2014';
+  if (v === 0) return '0';
+  if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(2) + 'K';
+  return v.toFixed(2);
+}
+function formatUSD(v) {
+  if (v == null || isNaN(v)) return '\u2014';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+}
+function divLabel(l) { return l === 3 ? '\u5f3a' : l === 2 ? '\u4e2d\u7b49' : '\u5f31'; }
+function pctDir(p) { return p != null && p >= 0 ? 'up' : 'dn'; }
+
+// ── Seeded random for reproducible mock data ──
+let _seed = 42;
+function srand(s) { _seed = s; }
+function rand() { _seed = (_seed * 16807 + 0) % 2147483647; return (_seed - 1) / 2147483646; }
+
+// ── Mock Data Generators ──
+const MOCK_COINS = [
+  { symbol: 'PEPEUSDT', pair: 'PEPE/USDT', exchange: 'Binance', basePrice: 0.00001234, chg: 32.27, divLevel: 3, oiChg: 248.9 },
+  { symbol: 'WIFUSDT',  pair: 'WIF/USDT',  exchange: 'Binance', basePrice: 2.847,      chg: -8.52, divLevel: 2, oiChg: 65.3 },
+  { symbol: 'BONKUSDT', pair: 'BONK/USDT', exchange: 'Binance', basePrice: 0.0000234,  chg: 46.82, divLevel: 3, oiChg: -7.5 },
+  { symbol: 'FLOKIUSDT',pair: 'FLOKI/USDT',exchange: 'Binance', basePrice: 0.000187,   chg: 12.35, divLevel: 1, oiChg: 18.2 },
+  { symbol: 'DOGEUSDT', pair: 'DOGE/USDT', exchange: 'Binance', basePrice: 0.1588,     chg: -3.21, divLevel: 2, oiChg: 8.95 },
+  { symbol: 'SHIBUSDT', pair: 'SHIB/USDT', exchange: 'Binance', basePrice: 0.0000245,  chg: 59.89, divLevel: 3, oiChg: 101.7 },
+];
+
+function generateKlines(basePrice, count, intervalMs) {
+  srand(basePrice * 100000 + intervalMs);
+  var result = [];
+  var now = Date.now();
+  var startTime = now - count * intervalMs;
+  var price = basePrice * (0.85 + rand() * 0.15);
+  var baseOi = basePrice * 1e8 * (0.8 + rand() * 0.4);
+  var oi = baseOi;
+
+  for (var i = 0; i < count; i++) {
+    var time = startTime + i * intervalMs;
+    var volatility = basePrice * (0.005 + rand() * 0.025);
+    var drift = (rand() - 0.48) * volatility;
+    var open = price;
+    var close = open + drift;
+    var high = Math.max(open, close) + rand() * volatility * 0.8;
+    var low = Math.min(open, close) - rand() * volatility * 0.8;
+    if (low <= 0) low = open * 0.99;
+    var volume = basePrice * 1e7 * (0.3 + rand() * 1.4);
+    oi = oi * (0.97 + rand() * 0.06);
+    // Simulate OI divergence: OI rising while price drops in last 20%
+    if (i > count * 0.8) oi *= (1 + rand() * 0.03);
+
+    result.push({ time: time, open: open, high: high, low: low, close: close, volume: volume, oi: oi });
+    price = close;
+  }
+  return result;
+}
+
+function getIntervalMs(iv) {
+  var map = { '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000 };
+  return map[iv] || 300000;
+}
+
+function generateDetail(coin) {
+  srand(coin.basePrice * 1e6);
+  var price = coin.basePrice * (0.95 + rand() * 0.1);
+  var low24 = price * (0.92 + rand() * 0.04);
+  var high24 = price * (1.02 + rand() * 0.08);
+  var name = coin.symbol.replace(/USDT$/, '');
+  // Signal triggered ~40 bars ago on 5m chart
+  var sigTime = Date.now() - 40 * 300000;
+  var entryMid = price * (1.0 + rand() * 0.02);
+  return {
+    symbol: coin.symbol, name: name, pair: coin.pair, exchange: coin.exchange,
+    curPrice: price, chg24Pct: coin.chg, low24: low24, high24: high24,
+    stats: {
+      vol24Usd: coin.basePrice * 3e8 * (0.5 + rand()),
+      fundRatePct: (rand() - 0.3) * 0.1,
+      openInterestUsd: coin.basePrice * 1e9 * (0.5 + rand()),
+      longRatioPct: 55 + rand() * 25,
+      shortRatioPct: 0,
+    },
+    signals: (function() {
+      var sigs = [];
+      // Latest active signal
+      sigs.push({
+        id: 'sig_' + coin.symbol.toLowerCase() + '_' + sigTime,
+        divergenceLevel: coin.divLevel,
+        consecutiveBars: 2 + Math.floor(rand() * 3),
+        oiChgPct: coin.oiChg,
+        triggeredAt: sigTime,
+        entry: [entryMid * 0.995, entryMid * 1.005],
+        sl: entryMid * 1.3,
+        slNote: '8H\u9ad8\u70b9\u4e0a\u65b95%',
+        tp1: entryMid * 0.8,
+        tp1Note: '24H\u4f4e\u70b9',
+        tp2: entryMid * 0.65,
+        tp2Note: '\u80cc\u79bb\u8d77\u59cb\u4ef7\u683c',
+        rr: (1.5 + rand() * 2).toFixed(1) + ':1',
+        liqPrice: entryMid * 10,
+        status: 'active',
+      });
+      // 2-3 historical closed signals
+      var histCount = 2 + Math.floor(rand() * 2);
+      for (var hi = 0; hi < histCount; hi++) {
+        var hTime = sigTime - (hi + 1) * 86400000 * (1 + Math.floor(rand() * 3));
+        var hLevel = 1 + Math.floor(rand() * 3);
+        var hOiChg = (rand() - 0.3) * 80;
+        var hEntry = entryMid * (0.9 + rand() * 0.2);
+        sigs.push({
+          id: 'sig_' + coin.symbol.toLowerCase() + '_h' + hi + '_' + hTime,
+          divergenceLevel: hLevel,
+          consecutiveBars: 1 + Math.floor(rand() * 4),
+          oiChgPct: hOiChg,
+          triggeredAt: hTime,
+          entry: [hEntry * 0.995, hEntry * 1.005],
+          sl: hEntry * 1.25, slNote: '',
+          tp1: hEntry * 0.82, tp1Note: '',
+          tp2: hEntry * 0.68, tp2Note: '',
+          rr: (1.0 + rand() * 2.5).toFixed(1) + ':1',
+          liqPrice: hEntry * 10,
+          status: 'closed',
+        });
+      }
+      return sigs;
+    })(),
+    perf: { d7: (rand() - 0.4) * 30, d30: (rand() - 0.5) * 40, d90: (rand() - 0.6) * 50, d180: (rand() - 0.5) * 60, ytd: (rand() - 0.5) * 50, y1: (rand() - 0.5) * 80 },
+  };
+}
+
+function getMockList() {
+  return {
+    scanTime: new Date().toISOString(),
+    pipeline: { scanned: 200, anomaly: 12, oiFiltered: 8, controlFiltered: 6, divergence: MOCK_COINS.length },
+    items: MOCK_COINS.map(c => ({
+      symbol: c.symbol, name: c.symbol.replace(/USDT$/, ''), pair: c.pair, exchange: c.exchange,
+      curPrice: c.basePrice, chg24Pct: c.chg, divergenceLevel: c.divLevel, oiChgPct: c.oiChg,
+    }))
+  };
+}
+
+function getMockDetail(symbol) {
+  var coin = MOCK_COINS.find(c => c.symbol === symbol);
+  if (!coin) coin = MOCK_COINS[0];
+  var d = generateDetail(coin);
+  d.stats.shortRatioPct = 100 - d.stats.longRatioPct;
+  return d;
+}
+
+function getMockKlines(symbol, interval) {
+  var coin = MOCK_COINS.find(c => c.symbol === symbol);
+  if (!coin) coin = MOCK_COINS[0];
+  return generateKlines(coin.basePrice, 200, getIntervalMs(interval));
+}
+
+// ── Render Topbar ──
+function renderTopbar() {
+  const infoEl = document.getElementById('scan-info');
+  const pipeEl = document.getElementById('pipeline-stats');
+  if (listData.scanTime) {
+    infoEl.textContent = new Date(listData.scanTime).toISOString().replace('T', ' ').slice(0, 16) + ' UTC \u00b7 \u9608\u503c 4H >3.5% / 24H >12%';
+  }
+  const p = listData.pipeline;
+  if (p) {
+    pipeEl.innerHTML = `<span style="color:var(--t-text);font-weight:600">${p.scanned}</span> \u626b\u63cf <span style="color:var(--t-text4)">\u2192</span> <span style="color:var(--t-text);font-weight:600">${p.anomaly}</span> \u5f02\u5e38 <span style="color:var(--t-text4)">\u2192</span> <span style="color:var(--t-text);font-weight:600">${p.oiFiltered}</span> OI <span style="color:var(--t-text4)">\u2192</span> <span style="color:var(--t-text);font-weight:600">${p.controlFiltered}</span> \u63a7\u76d8 <span style="color:var(--t-text4)">\u2192</span> <span style="color:var(--t-dn);font-weight:700">${p.divergence}</span> \u80cc\u79bb`;
+  }
+}
+
+// ── Render Coin List ──
+function renderCoinList() {
+  const body = document.getElementById('coin-list-body');
+  document.getElementById('coin-count').textContent = listData.items.length;
+  body.innerHTML = '';
+  listData.items.forEach((item, idx) => {
+    const dir = pctDir(item.chg24Pct);
+    const el = document.createElement('div');
+    el.className = 'coin-item' + (item.symbol === activeSymbol ? ' active' : '');
+    el.innerHTML = `
+      <div class="rank">${idx + 1}</div>
+      <div class="info">
+        <div class="name">${item.name}</div>
+        <div class="pair">${item.pair} \u00b7 \u6c38\u7eed</div>
+        <div class="chg" style="color:var(--t-${dir})">${formatPct(item.chg24Pct)}</div>
+        <div class="div-info">${divLabel(item.divergenceLevel)}\u80cc\u79bb \u00b7 OI ${formatPct(item.oiChgPct, 1)}</div>
+      </div>
+      <div class="div-badge">${divLabel(item.divergenceLevel)}</div>`;
+    el.addEventListener('click', () => selectSymbol(item.symbol));
+    body.appendChild(el);
+  });
+}
+
+// ── Render Chart Header ──
+function renderChartHeader() {
+  const el = document.getElementById('chart-header');
+  if (!detail) { el.innerHTML = ''; return; }
+  const dir = pctDir(detail.chg24Pct);
+  const k = klines.length > 0 ? klines[klines.length - 1] : null;
+  const price = k ? k.close : detail.curPrice;
+
+  const intervals = ['5m','15m','1h','4h','1d'];
+  const labels = { '5m':'5m','15m':'15m','1h':'1H','4h':'4H','1d':'1D' };
+
+  let html = `<div class="chart-symbol">${detail.pair}<span class="chart-exchange">${detail.exchange} \u6c38\u7eed</span></div>`;
+  html += `<div class="chart-intervals"><span style="font-size:11px;color:var(--t-text3);margin-right:4px">\u5468\u671f</span>`;
+  intervals.forEach(iv => {
+    html += `<button class="iv-btn${iv === currentInterval ? ' active' : ''}" data-iv="${iv}">${labels[iv]}</button>`;
+  });
+  html += `</div>`;
+  html += `<div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--t-${dir})">${formatPrice(price)}</div>`;
+  html += `<div style="font-family:var(--font-mono);font-size:12px;padding:2px 8px;border-radius:4px;background:var(--t-${dir}-dim);color:var(--t-${dir})">${formatPct(detail.chg24Pct)}</div>`;
+  if (k) {
+    html += `<div class="chart-ohlc">`;
+    [['开',k.open],['高',k.high],['低',k.low],['收',k.close]].forEach(([l,v]) => {
+      html += `<span><span style="color:var(--t-text3)">${l}</span> ${formatPrice(v)}</span>`;
+    });
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+
+  // bind interval buttons
+  el.querySelectorAll('.iv-btn').forEach(btn => {
+    btn.addEventListener('click', () => changeInterval(btn.dataset.iv));
+  });
+}
+
+// ── Chart ──
+function createOiChart() {
+  const el = document.getElementById('chart-container');
+  if (chart) { chart.remove(); chart = null; candleSeries = null; volSeries = null; oiSeries = null; }
+  if (klines.length === 0) return;
+
+  const LWC = LightweightCharts;
+
+  chart = LWC.createChart(el, {
+    layout: { background: { type: LWC.ColorType.Solid, color: '#0d1017' }, textColor: '#5e6673', fontFamily: "'JetBrains Mono', monospace", fontSize: 10, attributionLogo: false },
+    grid: { vertLines: { color: '#ffffff04' }, horzLines: { color: '#ffffff04' } },
+    crosshair: { mode: LWC.CrosshairMode.Normal, vertLine: { color: '#ffffff18', labelBackgroundColor: '#20252c' }, horzLine: { color: '#ffffff18', labelBackgroundColor: '#20252c' } },
+    rightPriceScale: { borderColor: '#ffffff08', textColor: '#848e9c', scaleMargins: { top: 0.06, bottom: 0.28 } },
+    timeScale: {
+      borderColor: '#ffffff08', timeVisible: true, secondsVisible: false, rightOffset: 5,
+      tickMarkFormatter: function(time, type) {
+        var d = new Date(time * 1000);
+        if (type === LWC.TickMarkType.Year) return String(d.getFullYear());
+        if (type === LWC.TickMarkType.Month) return d.toLocaleString(undefined, { month: 'short' });
+        if (type === LWC.TickMarkType.DayOfMonth) return d.toLocaleString(undefined, { month: 'numeric', day: 'numeric' });
+        return d.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+    },
+    localization: { timeFormatter: function(time) { return new Date(time * 1000).toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }); } },
+    width: el.clientWidth, height: el.clientHeight,
+  });
+
+  const cp = detail ? detail.curPrice : klines[klines.length - 1].close;
+  const minMove = cp < 0.0001 ? 0.0000000001 : cp < 0.001 ? 0.00000001 : cp < 0.1 ? 0.000001 : cp < 1 ? 0.0001 : cp < 100 ? 0.001 : 0.01;
+
+  candleSeries = chart.addSeries(LWC.CandlestickSeries, {
+    upColor: '#0ecb81', downColor: '#f6465d', borderUpColor: '#0ecb81', borderDownColor: '#f6465d',
+    wickUpColor: '#0ecb81', wickDownColor: '#f6465d', priceFormat: { type: 'price', minMove: minMove },
+  });
+
+  volSeries = chart.addSeries(LWC.HistogramSeries, { priceScaleId: 'volume', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false }, 0);
+  chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } });
+
+  var oiVals = klines.map(k => k.oi).filter(v => v > 0);
+  oiBaseline = oiVals.length > 0 ? Math.min.apply(null, oiVals) * 0.95 : 0;
+
+  oiSeries = chart.addSeries(LWC.HistogramSeries, {
+    color: '#1e9cf480',
+    priceFormat: { type: 'custom', formatter: function(v) { return formatOI(v + oiBaseline); } },
+    lastValueVisible: false, priceLineVisible: false,
+  }, 1);
+
+  setChartData();
+  chart.timeScale().scrollToRealTime();
+
+  // ResizeObserver
+  var ro = new ResizeObserver(function() {
+    if (!chart) return;
+    chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+    renderSignalMarkers();
+  });
+  ro.observe(el);
+
+  // Crosshair move
+  chart.subscribeCrosshairMove(function(param) {
+    var overlay = document.getElementById('crosshair-ohlc');
+    if (!param.time) { overlay.style.display = 'none'; return; }
+    var bar = param.seriesData.get(candleSeries);
+    if (!bar || !('open' in bar)) { overlay.style.display = 'none'; return; }
+    var kline = klines.find(k => Math.floor(k.time / 1000) === param.time);
+    var isBull = bar.close >= bar.open;
+    var col = isBull ? 'var(--t-up)' : 'var(--t-dn)';
+    overlay.style.display = 'flex';
+    overlay.innerHTML = [
+      ['O', formatPrice(bar.open)], ['H', formatPrice(bar.high)], ['L', formatPrice(bar.low)], ['C', formatPrice(bar.close)]
+    ].map(function(x) { return '<span><span style="color:var(--t-text3)">' + x[0] + ' </span><span style="color:' + col + '">' + x[1] + '</span></span>'; }).join('')
+    + ' <span><span style="color:var(--t-text3)">VOL </span><span style="color:var(--t-amber)">' + formatOI(kline ? kline.volume : 0) + '</span></span>'
+    + ' <span><span style="color:var(--t-text3)">OI </span><span style="color:var(--t-cyan)">' + formatOI(kline ? kline.oi : 0) + '</span></span>';
+  });
+
+  // Visible range change -> update signal markers
+  chart.timeScale().subscribeVisibleLogicalRangeChange(function() { renderSignalMarkers(); });
+
+  document.getElementById('loading').style.display = 'none';
+  renderSignalMarkers();
+}
+
+function setChartData() {
+  if (!candleSeries) return;
+  candleSeries.setData(klines.map(k => ({ time: Math.floor(k.time / 1000), open: k.open, high: k.high, low: k.low, close: k.close })));
+  volSeries.setData(klines.map(k => ({ time: Math.floor(k.time / 1000), value: k.volume, color: k.close >= k.open ? '#0ecb8155' : '#f6465d55' })));
+
+  var oiVals = klines.map(k => k.oi).filter(v => v > 0);
+  oiBaseline = oiVals.length > 0 ? Math.min.apply(null, oiVals) * 0.95 : 0;
+  if (oiSeries) {
+    oiSeries.applyOptions({ priceFormat: { type: 'custom', formatter: function(v) { return formatOI(v + oiBaseline); } } });
+  }
+  oiSeries.setData(klines.map(function(k, i) {
+    return { time: Math.floor(k.time / 1000), value: k.oi > 0 ? k.oi - oiBaseline : 0, color: i === 0 || k.oi >= klines[i - 1].oi ? '#0ecb8155' : '#f6465d55' };
+  }));
+}
+
+// ── Signal Markers ──
+var markerEls = [];
+function renderSignalMarkers() {
+  // Remove old markers
+  markerEls.forEach(el => el.remove());
+  markerEls = [];
+  if (!chart || !candleSeries || !detail || !detail.signals) return;
+
+  var container = document.getElementById('chart-container');
+  var signals = detail.signals.filter(s => s.status === 'active' || s.status === 'triggered');
+
+  signals.forEach(function(sig) {
+    var snappedMs = null;
+    for (var i = klines.length - 1; i >= 0; i--) {
+      if (klines[i].time <= sig.triggeredAt) { snappedMs = klines[i].time; break; }
+    }
+    if (snappedMs == null) return;
+
+    var ts = Math.floor(snappedMs / 1000);
+    var x = chart.timeScale().timeToCoordinate(ts);
+    var anchorKline = klines.find(k => Math.floor(k.time / 1000) === ts);
+    var anchorPrice = anchorKline ? anchorKline.high : sig.entry[1];
+    var y = candleSeries.priceToCoordinate(anchorPrice);
+    if (x == null || y == null || isNaN(x) || isNaN(y) || y < 0) return;
+
+    var isTriggered = sig.status === 'triggered';
+    var color = isTriggered ? 'var(--t-up)' : 'var(--t-dn)';
+    var glowColor = isTriggered ? '#0ecb8188' : '#f6465d88';
+
+    var marker = document.createElement('div');
+    marker.className = 'signal-marker';
+    marker.style.left = x + 'px';
+    marker.style.top = (y - 4) + 'px';
+    marker.innerHTML = '<div class="label" style="color:' + color + ';text-shadow:0 0 10px ' + glowColor + '">SHORT</div>'
+      + '<div class="arrow" style="border-top-color:' + (isTriggered ? 'var(--t-up)' : 'var(--t-dn)') + ';filter:drop-shadow(0 0 8px ' + glowColor + ')"></div>';
+
+    marker.addEventListener('mouseenter', function(e) { showSignalTooltip(sig, marker, container); });
+    marker.addEventListener('mouseleave', function() { document.getElementById('signal-tooltip').classList.remove('show'); });
+
+    container.appendChild(marker);
+    markerEls.push(marker);
+  });
+}
+
+function showSignalTooltip(sig, markerEl, container) {
+  var tt = document.getElementById('signal-tooltip');
+  var rect = markerEl.getBoundingClientRect();
+  var cRect = container.getBoundingClientRect();
+
+  tt.innerHTML = `
+    <div class="tt-head"><span class="title">\ud83c\udfaf ${detail.name} \u505a\u7a7a\u4fe1\u53f7</span><span class="badge">${divLabel(sig.divergenceLevel)}\u80cc\u79bb</span></div>
+    <div class="tt-row"><span class="lbl">\u5165\u573a\u533a\u95f4</span><span class="val">${formatPrice(sig.entry[0])} \u2014 ${formatPrice(sig.entry[1])}</span></div>
+    <div class="tt-row"><span class="lbl">\u6b62\u635f\u4f4d</span><span class="val" style="color:var(--t-dn)">${formatPrice(sig.sl)}${sig.slNote ? '<span class="note">' + sig.slNote + '</span>' : ''}</span></div>
+    <div class="tt-sep"></div>
+    <div class="tt-row"><span class="lbl">\u6b62\u76c8\u4f4d 1</span><span class="val" style="color:var(--t-up)">${formatPrice(sig.tp1)}${sig.tp1Note ? '<span class="note">' + sig.tp1Note + '</span>' : ''}</span></div>
+    <div class="tt-row"><span class="lbl">\u6b62\u76c8\u4f4d 2</span><span class="val" style="color:var(--t-up)">${formatPrice(sig.tp2)}${sig.tp2Note ? '<span class="note">' + sig.tp2Note + '</span>' : ''}</span></div>
+    <div class="tt-sep"></div>
+    <div class="tt-row"><span class="lbl">\u76c8\u4e8f\u6bd4</span><span class="val" style="color:var(--t-up)">${sig.rr}</span></div>
+    <div class="tt-row"><span class="lbl">\u7206\u4ed3\u4ef7</span><span class="val" style="color:var(--t-amber)">&gt; ${formatPrice(sig.liqPrice)}<span class="note">10x+</span></span></div>
+    <div class="tt-rr-box"><div class="rr-val">${sig.rr}</div><div class="rr-lbl">\u76c8\u4e8f\u6bd4</div></div>`;
+
+  // Position: prefer above marker
+  var ttW = 290, ttH = 320;
+  var cx = rect.left + rect.width / 2;
+  var left = Math.max(8, Math.min(cx - ttW / 2, window.innerWidth - ttW - 8));
+
+  if (rect.top - ttH - 10 > 0) {
+    tt.style.left = left + 'px';
+    tt.style.top = (rect.top - ttH - 10) + 'px';
+  } else {
+    tt.style.left = left + 'px';
+    tt.style.top = (rect.bottom + 10) + 'px';
+  }
+  tt.classList.add('show');
+}
+
+// ── Format Signal Time ──
+function formatSignalTime(ts) {
+  var d = new Date(ts);
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+// ── Render Right Sidebar ──
+function renderRightSidebar() {
+  var el = document.getElementById('right-sidebar');
+  if (!detail) { el.innerHTML = ''; return; }
+  var dir = pctDir(detail.chg24Pct);
+  var rangeP = detail.high24 > detail.low24 ? ((detail.curPrice - detail.low24) / (detail.high24 - detail.low24)) * 100 : 50;
+  rangeP = Math.max(0, Math.min(100, rangeP));
+
+  var html = '';
+
+  // ── Price Section ──
+  html += '<div class="sb-section">';
+  html += '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:6px">' + detail.pair;
+  html += ' <span style="font-size:10px;color:var(--t-text3);font-weight:400;padding:1px 5px;border:1px solid var(--t-border2);border-radius:3px">' + detail.exchange + '</span></div>';
+  html += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">';
+  html += '<span style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--t-' + dir + ')">' + formatPrice(detail.curPrice) + '<small style="color:var(--t-text3);font-size:11px;margin-left:4px">USD</small></span>';
+  html += '<span style="font-family:var(--font-mono);font-size:12px;color:var(--t-' + dir + ')">' + formatPct(detail.chg24Pct) + '</span></div>';
+  // 24h range bar
+  html += '<div style="margin-top:8px">';
+  html += '<div style="height:4px;border-radius:2px;background:var(--t-bg5);position:relative;margin:6px 0 4px">';
+  html += '<div style="height:100%;border-radius:2px;background:linear-gradient(90deg,var(--t-dn),var(--t-up));position:absolute;left:0;width:100%"></div>';
+  html += '<div style="width:8px;height:8px;border-radius:50%;background:#fff;border:2px solid var(--t-bg2);position:absolute;top:-2px;left:' + rangeP + '%;transform:translateX(-50%)"></div></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--t-text3)"><span>' + formatPrice(detail.low24) + '</span><span>' + formatPrice(detail.high24) + '</span></div>';
+  html += '<div style="font-size:10px;color:var(--t-text2);text-align:center;margin-top:2px">\u4eca\u65e5\u4ef7\u683c\u8303\u56f4</div>';
+  html += '</div></div>';
+
+  // ── Stats Section ──
+  var s = detail.stats;
+  var fundDir = pctDir(s.fundRatePct);
+  var fundSign = s.fundRatePct >= 0 ? '+' : '';
+  html += '<div class="sb-section">';
+  html += '<div class="sb-title">\u6570\u636e\u7edf\u8ba1</div>';
+  html += sbStatRow('\u6210\u4ea4\u989d', formatUSD(s.vol24Usd));
+  html += sbStatRow('\u8d44\u91d1\u8d39\u7387', fundSign + (s.fundRatePct ?? 0).toFixed(4) + '%', 'var(--t-' + fundDir + ')');
+  html += sbStatRow('\u672a\u5e73\u4ed3\u5408\u7ea6', formatUSD(s.openInterestUsd));
+  html += sbStatRow('24H\u591a\u7a7a\u6bd4', (s.longRatioPct ?? 0).toFixed(2) + '% / ' + (s.shortRatioPct ?? 0).toFixed(2) + '%');
+  html += '</div>';
+
+  // ── Signal Card ──
+  if (detail.signals.length === 0) {
+    html += '<div class="sb-section" style="color:var(--t-text3);font-size:12px">\u6682\u65e0\u4fe1\u53f7</div>';
+  } else {
+    var latest = detail.signals[0];
+    var others = detail.signals.slice(1);
+    html += '<div style="border-bottom:1px solid var(--t-border)">';
+    html += '<div style="padding:12px 14px' + (others.length > 0 ? ';border-bottom:1px solid var(--t-border)' : '') + '">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    html += '<span style="font-size:10px;color:var(--t-dn);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--font-mono);font-weight:700">\u26a0 \u505a\u7a7a\u4fe1\u53f7</span>';
+    html += '<span style="font-size:10px;color:var(--t-text3)">' + divLabel(latest.divergenceLevel) + ' (\u8fde\u7eed' + latest.consecutiveBars + '\u6839)</span></div>';
+    html += '<div style="font-size:10px;color:var(--t-text3);font-family:var(--font-mono);margin-bottom:8px">' + formatSignalTime(latest.triggeredAt) + '</div>';
+    html += sbSigRow('\u5165\u573a\u533a\u95f4', formatPrice(latest.entry[0]) + ' \u2014 ' + formatPrice(latest.entry[1]));
+    html += sbSigRow('\u6b62\u635f\u4f4d', formatPrice(latest.sl), 'var(--t-dn)');
+    html += sbSigRow('\u6b62\u76c8 1', formatPrice(latest.tp1), 'var(--t-up)');
+    html += sbSigRow('\u6b62\u76c8 2', formatPrice(latest.tp2), 'var(--t-up)');
+    html += sbSigRow('\u76c8\u4e8f\u6bd4', latest.rr, 'var(--t-up)');
+    html += sbSigRow('\u7206\u4ed3\u4ef7', '> ' + formatPrice(latest.liqPrice), 'var(--t-amber)');
+    // Strength meter
+    html += '<div style="margin-top:8px"><div style="font-size:10px;color:var(--t-text3);margin-bottom:3px">\u80cc\u79bb\u5f3a\u5ea6</div>';
+    html += '<div style="height:6px;border-radius:3px;background:var(--t-bg5);overflow:hidden">';
+    html += '<div style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--t-amber),var(--t-dn));width:' + ((latest.divergenceLevel / 3) * 100) + '%"></div></div></div>';
+    html += '</div>';
+    // Historical signals
+    if (others.length > 0) {
+      html += '<div style="padding:8px 14px"><div style="font-size:10px;color:var(--t-text3);letter-spacing:1px;margin-bottom:6px;font-family:var(--font-mono)">\u5386\u53f2\u4fe1\u53f7</div>';
+      others.forEach(function(sig) {
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px solid var(--t-border)">';
+        html += '<span style="color:var(--t-text2)">' + divLabel(sig.divergenceLevel) + '\u80cc\u79bb \u00b7 ' + formatPct(sig.oiChgPct, 1) + '</span>';
+        html += '<span style="font-size:9px;color:var(--t-text3);font-family:var(--font-mono)">' + formatSignalTime(sig.triggeredAt) + '</span></div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Perf Grid ──
+  var perfItems = [
+    [detail.perf.d7, '7 \u5929'], [detail.perf.d30, '30 \u5929'], [detail.perf.d90, '90 \u5929'],
+    [detail.perf.d180, '180 \u5929'], [detail.perf.ytd, '\u4eca\u5e74\u81f3\u4eca'], [detail.perf.y1, '1 \u5e74']
+  ];
+  html += '<div class="sb-section"><div class="sb-title">\u5386\u53f2\u8868\u73b0</div><div class="sb-perf-grid">';
+  perfItems.forEach(function(item) {
+    var v = item[0], label = item[1];
+    var d = pctDir(v);
+    var bg = d === 'up' ? 'var(--t-up-dim)' : 'var(--t-dn-dim)';
+    var border = d === 'up' ? '#0ecb8118' : '#f6465d18';
+    var color = d === 'up' ? 'var(--t-up)' : 'var(--t-dn)';
+    html += '<div class="sb-perf-item" style="background:' + bg + ';border:1px solid ' + border + '">';
+    html += '<div class="pval" style="color:' + color + '">' + formatPct(v) + '</div>';
+    html += '<div class="plbl">' + label + '</div></div>';
+  });
+  html += '</div></div>';
+
+  el.innerHTML = html;
+}
+
+function sbStatRow(label, value, color) {
+  return '<div class="sb-stat-row"><span class="lbl">' + label + '</span><span class="val" style="color:' + (color || 'var(--t-text)') + '">' + value + '</span></div>';
+}
+function sbSigRow(label, value, color) {
+  return '<div class="sb-sig-row"><span class="lbl">' + label + '</span><span class="val" style="color:' + (color || 'var(--t-text)') + '">' + value + '</span></div>';
+}
+
+// ── Symbol Selection ──
+function selectSymbol(symbol) {
+  if (symbol === activeSymbol) return;
+  activeSymbol = symbol;
+  detail = getMockDetail(symbol);
+  klines = getMockKlines(symbol, currentInterval);
+  renderCoinList();
+  renderChartHeader();
+  renderRightSidebar();
+  createOiChart();
+}
+
+// ── Interval Change ──
+function changeInterval(iv) {
+  if (iv === currentInterval) return;
+  currentInterval = iv;
+  klines = getMockKlines(activeSymbol, iv);
+  renderChartHeader();
+  createOiChart();
+}
+
+// ── Init ──
+function init() {
+  listData = getMockList();
+  renderTopbar();
+
+  activeSymbol = listData.items[0].symbol;
+  detail = getMockDetail(activeSymbol);
+  klines = getMockKlines(activeSymbol, currentInterval);
+
+  renderCoinList();
+  renderChartHeader();
+  renderRightSidebar();
+  createOiChart();
+}
+
+init();
+</script>
+</body>
+</html>
